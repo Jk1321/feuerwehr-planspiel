@@ -146,6 +146,7 @@ try{bc=new BroadcastChannel('taktikplatte-maplibre-v3')}catch{}
 
 const osm={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap-Mitwirkende'}},layers:[{id:'osm',type:'raster',source:'osm'}]};
 const map=new maplibregl.Map({container:'map',style:osm,center:[8.626,50.513],zoom:14.5,attributionControl:true});
+window.taktikMap=map;
 map.addControl(new maplibregl.NavigationControl(),'top-right');
 map.doubleClickZoom.disable();
 
@@ -251,6 +252,7 @@ function updateFrontPreview(){
   $('front-notes').value = state.frontNotes || '';
 }
 
+window.taktikSetFrontImage=(src,name)=>{state.frontImage=src;state.frontImageName=name||'Panoramax';render()};
 function render(){
   markers.forEach(m=>m.remove()); markers=[];
   state.objects.filter(o=>o.kind!=='line').forEach(makeMarker);
@@ -338,5 +340,6 @@ $('front-modal').onclick=e=>{if(e.target===$('front-modal'))$('close-modal').cli
 render();
 })();
 </script>
+<script defer src="./auto-front-v4.js"></script>
 </body>
 </html>
