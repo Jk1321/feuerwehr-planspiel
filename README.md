@@ -9,23 +9,28 @@ Eigenständiger, kostenfreier Prototyp einer digitalen Planspielplatte für die 
 ## Funktionen
 
 - Interaktive Karte mit MapLibre GL JS und freier OSM-Basiskarte
-- Optional MapTiler Straßenkarte / Satellitenbilder mit eigenem, im Browser hinterlegtem API-Schlüssel
-- Feuerwehrfahrzeuge und taktische Lagezeichen auf der Karte setzen, verschieben und bearbeiten
-- Schlauchleitungen und Absperrungen zeichnen
-- Übungsuhr, zeitgesteuerte Einspielungen, Teilnehmeransicht (gleicher Browser, BroadcastChannel)
-- Lokaler Szenariospeicher und JSON-Import/Export
+- Optional MapTiler Straßenkarte / Satellitenbilder mit eigenem API-Schlüssel
+- Feuerwehrfahrzeuge und taktische Lagezeichen auf der Karte setzen
+- Bessere, eigenständige Grafiken für Fahrzeuge, Feuer, Rauch, Hydranten und Verkehrsunfälle
+- Frontalansicht / Erkundungsbild pro Szenario für die erste Lage beim Eintreffen
+- Erkundungshinweise zur statischen Lage direkt im Szenario speichern
+- B-/C-/A-Leitungen und Absperrungen als Linienobjekte
+- Übungsuhr und zeitgesteuerte Einspielungen
+- Teilnehmeransicht in separatem Browserfenster
+- Lokales Speichern/Laden sowie JSON-Export/Import von Szenarien
 
-## Sicherheit & Grenzen
+## Typischer didaktischer Einsatz
 
-Der API-Schlüssel wird im Browser gespeichert und kann bei clientseitigen Kartenanwendungen ausgelesen werden. Deshalb im MapTiler-Dashboard die später verwendete Website als erlaubten HTTP-Origin freigeben. Keine Secrets im GitHub-Repository hinterlegen.
+Die Anwendung eignet sich besonders für Planspiele mit statischer Ausgangslage:
 
-Für einen realen Einsatz nicht geeignet. Keine reale hydraulische, Brand- oder Rauchsimulation. Die parallele Teilnehmeransicht synchronisiert nur Browserfenster desselben Ursprungs; Online-Multiuser und Backend sind nicht Bestandteil der Version.
+1. Eintreffen an der Einsatzstelle
+2. Frontalansicht / erstes Lagebild betrachten
+3. Erkundung nach den vier Phasen durchführen
+4. Ersten Führungskreislauf durchlaufen
+5. Ersten Befehl an Einheit oder Zug ableiten
 
-## GitHub Pages
+## Hinweise
 
-1. Neues **öffentliches** Repository auf GitHub anlegen, z. B. `feuerwehr-planspiel`.
-2. `index.html` und `README.md` in die oberste Ebene hochladen.
-3. Einstellungen → Pages → Deploy from a branch → `main` / `(root)` → Save.
-4. Nach der Bereitstellung die GitHub-Pages-Domain in MapTiler als erlaubten Origin eintragen.
-
-OpenStreetMap-Karten: © OpenStreetMap-Mitwirkende. Bitte die Tile-Nutzungsregeln und Beschränkungen respektieren. Für größere Nutzung einen dedizierten Tile-Anbieter vorsehen.
+- Der MapTiler-API-Schlüssel wird lokal im Browser gespeichert.
+- Für GitHub Pages oder andere Veröffentlichungen sollte der Schlüssel auf die jeweilige Domain beschränkt werden.
+- Die Anwendung dient der Ausbildung und Übung, nicht der realen Einsatzführung.
