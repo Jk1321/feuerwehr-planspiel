@@ -1,50 +1,27 @@
-# TAKTIKPLATTE – Feuerwehr-Planspiel
+# TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Eigenständiger, kostenfreier Prototyp einer digitalen Planspielplatte für die Feuerwehrausbildung. Keine operative Einsatzführungssoftware.
+Aktueller Entwicklungsstand: **Version 5.1**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
-## Start
+## Vorbereitung in vier Schritten
 
-`index.html` im Browser öffnen (Internetverbindung für MapLibre und Kartendaten erforderlich). Alternativ kostenlos über GitHub Pages bereitstellen.
+1. **Alarmierung**: Alarmstichwort, Einsatzadresse, Meldebild, Uhrzeit, Datum, Wetter, Temperatur, Windrichtung, Windstärke und Sicht; ausrückende Fahrzeuge mit Funkrufnamen und Personalstärken.
+2. **Einsatzobjekt**: Suche nach verfügbarer Panoramax- oder optional Mapillary-Straßenaufnahme; Auswahl der Blickrichtung. Textliche Beschreibung realistischer Schadensmerkmale und Speicherung mehrerer Szenenstände. **KI-Bildbearbeitung ist noch nicht angeschlossen**; es wird daher noch kein bearbeitetes Bild generiert.
+3. **Optionale Lageentwicklung**: Vorbereitete Ereignisse (erst nach Freigabe durch die Planspielleitung) oder klassisches statisches Planspiel durch Überspringen dieses Schritts.
+4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
-## Funktionen
+## Fachliche Grundlage
 
-- Interaktive Karte mit MapLibre GL JS und freier OSM-Basiskarte
-- Optional MapTiler Straßenkarte / Satellitenbilder mit eigenem API-Schlüssel
-- Feuerwehrfahrzeuge und taktische Lagezeichen auf der Karte setzen
-- Bessere, eigenständige Grafiken für Fahrzeuge, Feuer, Rauch, Hydranten und Verkehrsunfälle
-- Frontalansicht / Erkundungsbild pro Szenario für die erste Lage beim Eintreffen
-- Erkundungshinweise zur statischen Lage direkt im Szenario speichern
-- B-/C-/A-Leitungen und Absperrungen als Linienobjekte
-- Übungsuhr und zeitgesteuerte Einspielungen
-- Teilnehmeransicht in separatem Browserfenster
-- Lokales Speichern/Laden sowie JSON-Export/Import von Szenarien
+Der Führungsvorgang nach dem Flyer **„Der Führungsvorgang“ der Hessischen Landesfeuerwehrschule** bleibt didaktische Grundlage: vier Phasen der Erkundung, acht Fragen der Beurteilung, Entschluss, Befehlsgebung und Kontrolle. Die Bearbeitung muss keine Führungskreislauf-Stufen im Programm auswählen. Die Zeichen orientieren sich an den **SKK-Empfehlungen für taktische Zeichen im Bevölkerungsschutz (2012)**; die aktuellen SVG-Symbole sind **vereinfachte eigene Darstellungen**, noch kein vollständiger Norm-Zeichenkatalog.
 
-## Typischer didaktischer Einsatz
+## Technische Hinweise
 
-Die Anwendung eignet sich besonders für Planspiele mit statischer Ausgangslage:
+- Die Web-Anwendung läuft statisch auf GitHub Pages; der Kartendienst MapLibre lädt OSM und optional MapTiler.
+- Die MapTiler- und optionale Mapillary-Client-Token-Eingabe wird lokal im Browser gespeichert. Keine vertraulichen Tokens oder Secrets in GitHub committen.
+- Die automatische Foto-Suche hängt von Abdeckung, API-Verfügbarkeit und Nutzungsbedingungen der Straßenbildanbieter ab. Fundbilder sind fremde Bildinhalte. Bei späterer generativer Bearbeitung sind die Lizenz- und Nutzungsbedingungen zu prüfen.
+- Die Teilnehmeransicht synchronisiert sich auf demselben Gerät über BroadcastChannel; **kein** echter Online-Mehrspieler-Dienst.
+- Das Übungsprotokoll wird über die Browser-Druckfunktion als PDF gespeichert; ein separater Beobachtungsbogen als PDF ist eine geplante Folgestufe.
+- **Kein autonomes Brandmodell, keine Spracherkennung, kein aktiver KI-Bildgenerator.**
 
-1. Eintreffen an der Einsatzstelle
-2. Frontalansicht / erstes Lagebild betrachten
-3. Erkundung nach den vier Phasen durchführen
-4. Ersten Führungskreislauf durchlaufen
-5. Ersten Befehl an Einheit oder Zug ableiten
+## Code
 
-## Hinweise
-
-- Der MapTiler-API-Schlüssel wird lokal im Browser gespeichert.
-- Für GitHub Pages oder andere Veröffentlichungen sollte der Schlüssel auf die jeweilige Domain beschränkt werden.
-- Die Anwendung dient der Ausbildung und Übung, nicht der realen Einsatzführung.
-
-## Stand 4.1: manuelle Planspielleitung und Straßenbilder
-
-- Ein übender Teilnehmer, ein Planspielleiter; keine Mehrspieler-Anmeldung.
-- Keine Auswahl von Führungsebenen und keine Phasensteuerung für die Bearbeitung.
-- Führungsvorgang nach HLFS bleibt als didaktische Grundlage im Hintergrund: Erkundung, Beurteilung, Entschluss, Befehlsgebung und erneute Erkundung/Kontrolle.
-- Die Planspielleitung kann Rauch, Feuer, Personen und Fahrzeugschäden manuell verändern, vorbereitete Ereignisse auslösen und Rückmeldungen freigeben.
-- Zum Einsatzort kann die Anwendung **Panoramax-Straßenbilder** automatisch suchen: Adresse unter „Ort suchen“ eingeben oder „Objekt auf Karte wählen“ verwenden. Bei fehlender Bildabdeckung wird kein beliebiges Bild eingesetzt.
-- Vorhandene Straßenbilder können aus verschiedenen nahe gelegenen Aufnahmen ausgewählt werden. Der Blickwinkel muss von der Planspielleitung geprüft werden.
-- Im Browser kann das Übungsprotokoll über Drucken → „Als PDF sichern“ ausgegeben werden.
-- Eine **separate PDF-Vorlage zur Beobachterbewertung** ist als nächste Dokumentationsaufgabe vorgemerkt.
-- Sprachsteuerung und autonomes Brandmodell sind ausdrücklich nicht Teil dieser Ausbaustufe.
-
-Straßenbilder sind Drittinhalte: Quellen- und Lizenzbedingungen beachten. Die Schadendarstellung erfolgt als separate Überlagerung. Der bisherige Bildupload bleibt aus Kompatibilitätsgründen im Programmcode, ist aber in der Bedienoberfläche ausgeblendet.
+Aktueller Einstiegspunkt: `index.html` lädt `app-v5.js`. Frühere Prototyp-Dateien sind historisch erhalten, werden jedoch nicht mehr geladen.
