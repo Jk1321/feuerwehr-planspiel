@@ -42,7 +42,7 @@
 .viewer .participant-panel>.paper:last-of-type{display:none}
 .viewer .map{min-height:540px}
 @media(max-width:700px){.landing-choices,.vehicle-tools{grid-template-columns:1fr}.landing-choice{min-height:112px;padding:20px}.landing-content{padding-top:45px}}
-</style></head><body>
+</style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
 <header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Konzeptversion 5.0</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
@@ -75,4 +75,4 @@
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v5.js?v=5.5" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v5.js?v=5.6" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
