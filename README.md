@@ -34,3 +34,17 @@ Die Anwendung eignet sich besonders für Planspiele mit statischer Ausgangslage:
 - Der MapTiler-API-Schlüssel wird lokal im Browser gespeichert.
 - Für GitHub Pages oder andere Veröffentlichungen sollte der Schlüssel auf die jeweilige Domain beschränkt werden.
 - Die Anwendung dient der Ausbildung und Übung, nicht der realen Einsatzführung.
+
+## Stand 4.1: manuelle Planspielleitung und Straßenbilder
+
+- Ein übender Teilnehmer, ein Planspielleiter; keine Mehrspieler-Anmeldung.
+- Keine Auswahl von Führungsebenen und keine Phasensteuerung für die Bearbeitung.
+- Führungsvorgang nach HLFS bleibt als didaktische Grundlage im Hintergrund: Erkundung, Beurteilung, Entschluss, Befehlsgebung und erneute Erkundung/Kontrolle.
+- Die Planspielleitung kann Rauch, Feuer, Personen und Fahrzeugschäden manuell verändern, vorbereitete Ereignisse auslösen und Rückmeldungen freigeben.
+- Zum Einsatzort kann die Anwendung **Panoramax-Straßenbilder** automatisch suchen: Adresse unter „Ort suchen“ eingeben oder „Objekt auf Karte wählen“ verwenden. Bei fehlender Bildabdeckung wird kein beliebiges Bild eingesetzt.
+- Vorhandene Straßenbilder können aus verschiedenen nahe gelegenen Aufnahmen ausgewählt werden. Der Blickwinkel muss von der Planspielleitung geprüft werden.
+- Im Browser kann das Übungsprotokoll über Drucken → „Als PDF sichern“ ausgegeben werden.
+- Eine **separate PDF-Vorlage zur Beobachterbewertung** ist als nächste Dokumentationsaufgabe vorgemerkt.
+- Sprachsteuerung und autonomes Brandmodell sind ausdrücklich nicht Teil dieser Ausbaustufe.
+
+Straßenbilder sind Drittinhalte: Quellen- und Lizenzbedingungen beachten. Die Schadendarstellung erfolgt als separate Überlagerung. Der bisherige Bildupload bleibt aus Kompatibilitätsgründen im Programmcode, ist aber in der Bedienoberfläche ausgeblendet.
