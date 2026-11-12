@@ -25,11 +25,9 @@ const rad=Math.PI/180;
 function distance(a,b){let dlat=(b.lat-a.lat)*rad,dlon=(b.lon-a.lon)*rad;let h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlon/2)**2;return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))}
 function assetURL(f){const a=f.assets||{};const value=(key)=>typeof a[key]==='string'?a[key]:a[key]?.href;return value('sd')||value('visual')||value('thumbnail')||value('thumb')||Object.values(a).find(v=>Array.isArray(v?.roles)&&v.roles.some(z=>z==='visual'||z==='thumbnail'))?.href||f.properties?.['geovisio:thumbnail']||(f.id?api+'/pictures/'+encodeURIComponent(f.id)+'/sd.jpg':null)}
 function featurePoint(f){const c=f.geometry?.coordinates;if(Array.isArray(c)&&c.length>=2)return {lat:Number(c[1]),lon:Number(c[0])};return null}
-function setImg(index){if(!results.length)return;current=(index+results.length)%results.length;const x=results[current];try{window.taktikSetFrontImage?.(x.url,(x.source||'Panoramax')+' – '+x.id)}catch(e){console.warn(e)}
-const m=Math.round(x.m);status.innerHTML='Foto '+(current+1)+'/'+results.length+' · ungefähr '+m+' m vom markierten Ort entfernt.';
-credit.textContent='Quelle: '+(x.source||'Panoramax')+' · Foto '+x.id+' · Objekt und Blickrichtung bitte prüfen.';
-nav.style.display=results.length>1?'flex':'none';
-document.getElementById('v4photo')?.setAttribute('src',x.url);
+function preload(src){return new Promise((resolve,reject)=>{const img=new Image();let done=false;img.onload=()=>{if(done)return;done=true;resolve(img)};img.onerror=()=>{if(done)return;done=true;reject(new Error('Bilddatei nicht abrufbar'))};img.src=src; if(img.complete){if(img.naturalWidth>0){done=true;resolve(img)}else if(img.naturalWidth===0){done=true;reject(new Error('Bilddatei nicht abrufbar'))}}})}
+async function setImg(index,tryNext=true){if(!results.length)return;const req=searchId;let errors=[];for(let step=0;step<(tryNext?results.length:1);step++){const n=(index+step+results.length)%results.length;const x=results[n];status.textContent='Prüfe Foto '+(n+1)+' von '+results.length+' …';try{await preload(x.url);if(req!==searchId)return;current=n;window.taktikSetFrontImage?.(x.url,(x.source||'Panoramax')+' – '+x.id);const m=Math.round(x.m);status.textContent='Foto '+(current+1)+'/'+results.length+' · ungefähr '+m+' m entfernt · erfolgreich geladen.';credit.textContent='Quelle: '+(x.source||'Panoramax')+' · Bild '+x.id+' · Objekt/Blickrichtung bitte prüfen.';nav.style.display=results.length>1?'flex':'none';return}catch(e){errors.push(x.id+': '+e.message)}}
+if(req!==searchId)return;status.textContent='Es wurden '+results.length+' Fotoeinträge gefunden, aber keines der Bilder konnte geladen werden. Bitte eine andere Bildquelle testen oder Browser-Bildblockierung prüfen.';credit.textContent='Technischer Bildladefehler, nicht gleichbedeutend mit fehlenden Straßenaufnahmen.';nav.style.display='none';console.warn('Bildladefehler',errors)
 }
 async function fetchRadius(lat,lon,d=0.0005){const url=new URL(api+'/search');url.searchParams.set('bbox',[lon-d,lat-d,lon+d,lat+d].join(','));url.searchParams.set('limit','45');const response=await fetch(url,{headers:{Accept:'application/geo+json,application/json'}});if(!response.ok)throw new Error('Panoramax HTTP '+response.status);const data=await response.json();return data.features||[]}
 
@@ -54,8 +52,8 @@ try{let features=[];let panoErr=null;for(const r of [0.0008,0.003,0.01]){try{fea
 let options=features.map(f=>{const coords=featurePoint(f),url=assetURL(f);return coords&&url?{id:f.id,url:new URL(url,api+'/').href,m:distance(p,coords)}:null}).filter(Boolean).sort((a,b)=>a.m-b.m);const seen=new Set();options=options.filter(x=>{if(seen.has(x.id))return false;seen.add(x.id);return true}).slice(0,12);
 if(!options.length){const more=await searchMapillary(lat,lon);if(requestId!==searchId)return;options=more;}
 if(!options.length){results=[];status.textContent=panoErr?'Panoramax-Suche fehlgeschlagen ('+panoErr.message+'). '+($('mapillarytoken').value.trim()?'Keine Mapillary-Bilder gefunden.':'Für Mapillary einen Zugangsschlüssel eintragen.'):'Keine Straßenbilder im geprüften Umfeld gefunden. Panoramax hat hier vermutlich keine Abdeckung. Für die zweite Bildquelle einen Mapillary-Zugangsschlüssel eintragen.';credit.textContent='Die Karte funktioniert unabhängig von der Bildverfügbarkeit.';return}
-results=options;current=0;setImg(0)
-}catch(e){if(requestId!==searchId)return;let extra=[];try{extra=await searchMapillary(lat,lon)}catch(err){}if(extra.length){results=extra;current=0;setImg(0)}else status.textContent='Straßenbildsuche derzeit nicht möglich: '+e.message;console.warn(e)}
+results=options;current=0;await setImg(0)
+}catch(e){if(requestId!==searchId)return;let extra=[];try{extra=await searchMapillary(lat,lon)}catch(err){}if(extra.length){results=extra;current=0;await setImg(0)}else status.textContent='Straßenbildsuche derzeit nicht möglich: '+e.message;console.warn(e)}
 }
 function mapPos(){const p=map.getCenter();return {lat:p.lat,lon:p.lng}}
 $('fsearch').onclick=()=>{const p=mapPos();findAround(p.lat,p.lon)};
