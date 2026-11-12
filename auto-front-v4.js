@@ -50,17 +50,17 @@ async function searchMapillary(lat,lon){
 }
 
 async function findAround(lat,lon){const requestId=++searchId;const p={lat,lon};target=p;status.textContent='Suche verfügbare Straßenaufnahmen im Umfeld …';nav.style.display='none';
-try{let features=[];for(const r of [0.0008,0.003,0.01]){features=await fetchRadius(lat,lon,r);if(requestId!==searchId)return;if(features.length)break}
+try{let features=[];let panoErr=null;for(const r of [0.0008,0.003,0.01]){try{features=await fetchRadius(lat,lon,r)}catch(e){panoErr=e;break}if(requestId!==searchId)return;if(features.length)break}
 let options=features.map(f=>{const coords=featurePoint(f),url=assetURL(f);return coords&&url?{id:f.id,url:new URL(url,api+'/').href,m:distance(p,coords)}:null}).filter(Boolean).sort((a,b)=>a.m-b.m);const seen=new Set();options=options.filter(x=>{if(seen.has(x.id))return false;seen.add(x.id);return true}).slice(0,12);
 if(!options.length){const more=await searchMapillary(lat,lon);if(requestId!==searchId)return;options=more;}
-if(!options.length){results=[];status.textContent='Keine Straßenbilder im geprüften Umfeld gefunden. Panoramax ist hier möglicherweise nicht abgedeckt. Für eine zweite Suche Mapillary-Zugangsschlüssel eintragen.';credit.textContent='Die Karte funktioniert unabhängig von der Bildverfügbarkeit.';return}
+if(!options.length){results=[];status.textContent=panoErr?'Panoramax-Suche fehlgeschlagen ('+panoErr.message+'). '+($('mapillarytoken').value.trim()?'Keine Mapillary-Bilder gefunden.':'Für Mapillary einen Zugangsschlüssel eintragen.'):'Keine Straßenbilder im geprüften Umfeld gefunden. Panoramax hat hier vermutlich keine Abdeckung. Für die zweite Bildquelle einen Mapillary-Zugangsschlüssel eintragen.';credit.textContent='Die Karte funktioniert unabhängig von der Bildverfügbarkeit.';return}
 results=options;current=0;setImg(0)
-}catch(e){if(requestId!==searchId)return;status.textContent='Straßenbildsuche derzeit nicht möglich: '+e.message;console.warn(e)}
+}catch(e){if(requestId!==searchId)return;let extra=[];try{extra=await searchMapillary(lat,lon)}catch(err){}if(extra.length){results=extra;current=0;setImg(0)}else status.textContent='Straßenbildsuche derzeit nicht möglich: '+e.message;console.warn(e)}
 }
 function mapPos(){const p=map.getCenter();return {lat:p.lat,lon:p.lng}}
 $('fsearch').onclick=()=>{const p=mapPos();findAround(p.lat,p.lon)};
 $('fpick').onclick=()=>{if(pickMode)return;pickMode=true;$('cancel')?.click();status.textContent='Jetzt das Einsatzobjekt auf der Karte anklicken.';map.once('click',e=>{pickMode=false;findAround(e.lngLat.lat,e.lngLat.lng)})};
 $('fprev').onclick=()=>setImg(current-1);$('fnext').onclick=()=>setImg(current+1);
-const find=$('find');if(find)find.addEventListener('click',()=>{map.once('moveend',()=>{const p=mapPos();findAround(p.lat,p.lon)})});
+const find=$('find');if(find)find.addEventListener('click',()=>{const onMoved=()=>{const p=mapPos();findAround(p.lat,p.lon)};map.once('moveend',onMoved)});
 window.taktikFrontSearch=(lat,lon)=>findAround(lat,lon);
 })();
