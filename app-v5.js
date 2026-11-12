@@ -61,6 +61,42 @@ $("#photoStatus").textContent="Keine passenden Straßenbilder gefunden. "+(panoE
 async function showPhoto(n){if(!photos.length)return;for(let i=0;i<photos.length;i++){const idx=(n+i+photos.length)%photos.length,p=photos[idx];$("#photoStatus").textContent="Lade Straßenbild "+(idx+1)+" / "+photos.length+" …";try{await imgLoad(p.url);photoIndex=idx;st.imageUrl=p.url;st.imageSource=p.source;st.imageCredit=p.source+" · Foto "+p.id+" · ca. "+Math.round(p.m)+" m entfernt";$("#photoStatus").textContent="Bild geladen. Bitte prüfen, ob die Perspektive das richtige Gebäude zeigt.";renderPhoto();persist();return}catch{}}
 $("#photoStatus").textContent="Straßenbilder wurden gefunden, aber keines konnte geladen werden.";toast("Die gefundenen Bildlinks sind nicht abrufbar",true)}
 $("#prevPhoto").onclick=()=>showPhoto(photoIndex-1);$("#nextPhoto").onclick=()=>showPhoto(photoIndex+1);
+
+async function compressUploadedImage(file){
+  if(!file.type.startsWith("image/"))throw new Error("Bitte eine Bilddatei auswählen.");
+  const objectURL=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error("Bildformat kann vom Browser nicht geöffnet werden."));i.src=objectURL});
+    const maxDim=1400,scale=Math.min(1,maxDim/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    const ctx=canvas.getContext("2d");
+    if(!ctx)throw new Error("Bild konnte nicht verarbeitet werden.");
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    let quality=.77,output=canvas.toDataURL("image/jpeg",quality);
+    while(output.length>2_200_000&&quality>.4){quality-=.12;output=canvas.toDataURL("image/jpeg",quality)}
+    if(output.length>3_000_000)throw new Error("Bild nach dem Verkleinern noch zu groß. Bitte ein kleineres Foto verwenden.");
+    return output;
+  }finally{URL.revokeObjectURL(objectURL)}
+}
+$("#uploadFrontImage").onchange=async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  $("#uploadFrontStatus").textContent="Bild wird lokal verarbeitet …";
+  try{
+    const url=await compressUploadedImage(file);
+    st.imageUrl=url;
+    st.imageSource="Eigener Upload";
+    st.imageCredit="Eigenes Bild · "+file.name+" · lokal im Browser";
+    photos=[];photoIndex=0;
+    renderPhoto();persist();
+    $("#photoStatus").textContent="Eigenes Bild als Frontalansicht übernommen.";
+    $("#uploadFrontStatus").textContent="Foto übernommen. Es wird lokal gespeichert und kann als Szenenstand verwendet werden.";
+    toast("Eigenes Foto erfolgreich übernommen");
+  }catch(err){$("#uploadFrontStatus").textContent=err.message;toast(err.message,true)}
+  e.target.value="";
+};
+
 $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")||"";$("#mapillaryToken").onchange=e=>{localStorage.setItem("taktikplatte-mapillary-token",e.target.value.trim());toast("Mapillary-Zugang gespeichert")};
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
