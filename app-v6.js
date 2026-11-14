@@ -47,6 +47,8 @@ function orgColor(org){return tacticCatalog[org]?.color||"#d4202b"}
 function tacticalVehicleSvg(type,org="fw",small=false){
  const color=orgColor(org),textColor=org==="rd"?"#132f43":"#fff",outline=org==="rd"?"#23384a":"#132938";
  const label=String(type||"FW").replace(/[^A-Za-z0-9äöüÄÖÜ /-]/g,"").slice(0,12);
+ const rotor=/^(RTH|ITH)$/.test(String(type).trim().toUpperCase());
+ if(rotor){const size=small?49:64;return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+Math.round(size*.78)+'" viewBox="0 0 72 56" aria-label="'+safe(type)+'"><ellipse cx="35" cy="22" rx="27" ry="7" fill="none" stroke="#1b3146" stroke-width="3"/><path d="M35 10v34M9 22h52" stroke="#15293d" stroke-width="2.5"/><path d="M22 35c0-8 6-13 13-13 8 0 13 6 13 13v7H22Z" fill="#f6f6f2" stroke="#142b43" stroke-width="2"/><path d="M48 36h15m-3-7v15" stroke="#203950" stroke-width="3"/><rect x="29" y="27" width="13" height="7" rx="2" fill="#9cb9ce"/><text x="35" y="40" font-size="8" text-anchor="middle" font-weight="800" fill="#ba2930">'+safe(type)+'</text></svg>'}
  const w=small?46:62,h=small?40:52;
  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 68 54" role="img" aria-label="'+safe(label)+'">'+
  '<rect x="6" y="8" width="56" height="36" rx="2" fill="'+color+'" stroke="'+outline+'" stroke-width="2.3"/>'+
