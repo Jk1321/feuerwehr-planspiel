@@ -359,6 +359,20 @@ function renderHistory(){
  host.innerHTML=items.length?[...items].reverse().map(x=>'<div class="history-line"><time>'+safe(x.time)+'</time><strong>'+safe(x.type)+'</strong><div>'+safe(x.detail)+'</div><button data-review="'+safe(x.id)+'">Lagezustand anzeigen</button></div>').join(""):'<p class="helper">'+(st.started?'Noch keine dokumentierten Lageänderungen.':'Die Dokumentation beginnt mit dem Start des Übungsdurchlaufs.')+'</p>';
  host.querySelectorAll("[data-review]").forEach(btn=>btn.onclick=()=>{reviewSnapshot=items.find(x=>x.id===btn.dataset.review);if(reviewSnapshot){renderMarkers();$("#returnLive").hidden=false;toast("Historischer Lagezustand angezeigt – Teilnehmeransicht unverändert.")}});
 }
+function renderRadioMessages(){
+ const out=$("#radioList");if(!out||isViewer)return;
+ const data=Array.isArray(st.radioMessages)?st.radioMessages:[];
+ out.innerHTML=data.length?[...data].reverse().map(m=>'<article class="radio-entry"><strong>'+safe(m.type)+' · '+safe(m.time)+'</strong><small>'+safe(m.sender||"Ohne Funkrufname")+'</small><p>'+safe(m.text)+'</p></article>').join(""):'<p class="helper">Noch keine Funkmeldungen erfasst.</p>';
+}
+$("#radioRecord").onclick=()=>{
+ if(!st.started||st.ended)return toast("Funkmeldungen können nur während des laufenden Übungsdurchlaufs dokumentiert werden.",true);
+ const type=$("#radioType").value,content=$("#radioText").value.trim(),sender=$("#radioSender").value.trim();
+ if(!content)return toast("Bitte den Inhalt der Funkmeldung eingeben.",true);
+ if(!Array.isArray(st.radioMessages))st.radioMessages=[];
+ st.radioMessages.push({id:uid(),time:stamp(),type,sender,text:content});
+ log("Funkmeldung · "+type,(sender?sender+": ":"")+content);
+ $("#radioText").value="";renderRadioMessages();persist();toast("Funkmeldung dokumentiert");
+};
 function refreshReleaseViews(){
  if(!isViewer)return;
  const mapEl=$("#map"),banner=$("#mapAnnouncement");
@@ -406,7 +420,7 @@ $("#startClock").onclick=()=>{
  if(st.ended)return;
  if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";persist();return}
  if(!st.started){
-  st.started=true;st.clock=0;st.journal=[];st.history=[];
+  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];renderRadioMessages();
   $("#timeCounter").textContent=stamp();
   log("Übungsstart","Übungsdurchlauf durch die Planspielleitung gestartet");
  }
@@ -429,7 +443,7 @@ function viewerStart(){document.body.classList.remove("landing-mode");document.b
 if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
 window.addEventListener("beforeunload",persist);
 
-function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory()}
+function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory();if(id==="radio")renderRadioMessages()}
 $$("[data-director-tab]").forEach(b=>b.onclick=()=>showDirectorTab(b.dataset.directorTab));
 $("#directorAddCue").onclick=()=>go(2);
 $("#logCommand").onclick=()=>{if(!st.started||st.ended)return toast("Dokumentation ist nur während des gestarteten Übungsdurchlaufs möglich.",true);const n=$("#commandNote").value.trim();if(!n)return toast("Bitte eine Notiz eingeben",true);log("Befehl / Entscheidung",n);$("#commandNote").value="";persist();toast("In der Chronologie dokumentiert")};
@@ -440,7 +454,7 @@ $("#showViewerMap").checked=st.releaseMap!==false;
 $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;persist()};
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;persist()};
 
-renderTools();form();$("#timeCounter").textContent=stamp();renderEnded();
+renderTools();form();renderRadioMessages();$("#timeCounter").textContent=stamp();renderEnded();
 function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...migrateScenarioWind(j),step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
 $("#landingNew").onclick=()=>{st=initial();photos=[];photoIndex=0;document.body.classList.remove("landing-mode");go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
