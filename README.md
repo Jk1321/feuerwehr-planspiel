@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.3**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.5**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,15 @@ Aktueller Entwicklungsstand: **Version 6.3**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Änderungen in Version 6.5
+
+- **Teilnehmeransicht:** Das vollständige Werkzeugfeld „Taktische Zeichen“ ist für Teilnehmende ausgeblendet. Dort erscheinen nur freigegebene Lageinformationen und Kartenelemente.
+- **Taktischer Zeichenkatalog in der Regie:** Drei Dropdowns für Organisation (Feuerwehr, Rettungsdienst, THW, Polizei), Fahrzeuggruppe bzw. Einsatzstellenzeichen und konkreten Typ. Fahrzeuge können während der Übung auch ohne vorherige Anlage bei der Alarmierung nachgefordert und auf die Karte gesetzt werden. Funkrufname und Stärke sind bei neuen Fahrzeugen optional.
+- **Symbole:** Eigene vereinfachte taktische Zeichen mit organisationsabhängigen Farben, einschließlich Brand, Verkehrsunfall, Gefahrgut, Wasserentnahmestellen und RD-Fahrzeugen/Hubschraubern. Sie sind kein zertifizierter oder vollständiger SKK-Zeichenkatalog.
+- **Funkverkehr:** Neue Regie-Rubrik zur Dokumentation von Lage auf Sicht, Eintreffmeldung, Lagemeldung, Nachforderung, Abschlussmeldung oder sonstigen Funkmeldungen. Übungszeit, Funkrufname und Inhalt werden während des laufenden Durchlaufs gespeichert und ins Protokoll aufgenommen.
+- **Auswertung:** Anzeigen-/Ausblenden-Schaltvorgänge für Karte und Frontalansicht werden nicht mehr protokolliert. Bereits vorhandene solche Einträge werden in Chronologie und Ausdruck ausgefiltert.
+- **Neuer Einsatz:** Mit „Neuen Einsatz erstellen“ bzw. „Neu“ werden Uhr, Protokoll, Funkmeldungen, Lage und Beenden-Status zurückgesetzt. Ein importiertes Szenario übernimmt hingegen dessen gespeicherten Zustand.
 
 ## Änderungen in Version 6.3
 
