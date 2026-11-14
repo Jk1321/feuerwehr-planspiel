@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 5.1**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.0**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -8,6 +8,20 @@ Aktueller Entwicklungsstand: **Version 5.1**. Die Anwendung ist eine Ausbildungs
 2. **Einsatzobjekt**: Suche nach verfügbarer Panoramax- oder optional Mapillary-Straßenaufnahme; Auswahl der Blickrichtung. Textliche Beschreibung realistischer Schadensmerkmale und Speicherung mehrerer Szenenstände. **KI-Bildbearbeitung ist noch nicht angeschlossen**; es wird daher noch kein bearbeitetes Bild generiert.
 3. **Optionale Lageentwicklung**: Vorbereitete Ereignisse (erst nach Freigabe durch die Planspielleitung) oder klassisches statisches Planspiel durch Überspringen dieses Schritts.
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
+
+
+## Regiezentrale – Version 6.0
+
+- **Drehbuch:** vorbereitete Einspielungen werden nach Übungsminute sortiert und **manuell** freigegeben. Zeiten lösen nichts automatisch aus.
+- **Live-Einspielung:** neue Meldungen zu Feuer, Rauch, Personen und Maßnahmen; Befehle/Entscheidungen können für die Nachbesprechung dokumentiert werden.
+- **Nachbesprechung:** Historie von Lagewechseln und dokumentierten Entscheidungen mit in der Regie wieder aufrufbaren Karten-Zuständen. Die Ansicht der Teilnehmenden wird durch eine Rückschau nicht verändert.
+- **Teilnehmerfreigaben:** Karte und Frontalansicht lassen sich separat aus- und einblenden. Die unfreigegebene private Szenenbeschreibung wird nicht an die Teilnehmeroberfläche gerendert.
+- **Kartensymbole:** konkrete Fahrzeugbezeichnungen aus der Alarmierung sowie skalierbare und um jeweils 15 Grad drehbare taktische Zeichen. Symbole können für Teilnehmende verborgen werden.
+- **Hydranten:** auf Knopfdruck ein-/ausblendbare OpenStreetMap-Hydranten aus Overpass; Abdeckung und Dienste können lückenhaft sein. **Nicht für reale Löschwasserversorgungsplanung verwenden.**
+- **Referenzen:** Die fünf bereitgestellten DITASI-Reels sowie das öffentlich beschriebene LüneFire FPS (OpenStreetMap-Karte, DV-102-artige Zeichen, verschieb-/drehbare Symbole, Hydrantenebene). Dies ist eine eigenständige Implementierung, keine Übernahme fremden Quellcodes.
+- **Technik:** \`index.html\` lädt jetzt \`app-v6.js\` statt \`app-v5.js\`. Alte Dateien bleiben zur Nachvollziehbarkeit im Repository.
+
+**Noch offen:** fotorealistische KI-Bildbearbeitung (Backend erforderlich), wirkliches Online-Multiplayer-/Remote-Viewing, vollständige SKK-Zeichenbibliothek, fotorealistische Brand-/Rauchanimationen und automatisierte feuerwehrtaktische Auswertung. Karteneffekte sind derzeit visualisierte Symbole, keine physikalische Brandsimulation.
 
 ## Fachliche Grundlage
 
@@ -24,4 +38,4 @@ Der Führungsvorgang nach dem Flyer **„Der Führungsvorgang“ der Hessischen 
 
 ## Code
 
-Aktueller Einstiegspunkt: `index.html` lädt `app-v5.js`. Frühere Prototyp-Dateien sind historisch erhalten, werden jedoch nicht mehr geladen.
+Aktueller Einstiegspunkt: `index.html` lädt `app-v6.js`. Frühere Prototyp-Dateien sind historisch erhalten, werden jedoch nicht mehr geladen.
