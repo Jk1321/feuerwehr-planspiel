@@ -276,15 +276,53 @@ function signalCueFlash(){
 const osm={version:8,sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"osm",type:"raster",source:"osm"}]};
 function setupMap(){if(map){map.resize();renderMarkers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
 map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers();renderHydrants()});map.on("style.load",()=>{renderMarkers();renderHydrants()});map.on("moveend",()=>{if(isViewer)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
-map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const type=selected?"fahrzeug":tool;st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,vehicleId:selected?.id||null,vehicleType:selected?.type||"",size:1,rotation:0,label:selected?[(selected.type||"Fahrzeug"),selected.radio].filter(Boolean).join(" · "):""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
+map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const catalog=tool==="catalog"?catalogSelection():null;const type=selected||catalog?.kind==="fahrzeug"?"fahrzeug":catalog?.kind||tool;const org=selected?.org||catalog?.org||"fw";const vehicleType=selected?.type||catalog?.type||"";const radio=selected?.radio||((catalog?.kind==="fahrzeug")?$("#tacticCallsign").value.trim():"");const crew=selected?.crew||((catalog?.kind==="fahrzeug")?$("#tacticCrew").value.trim():"");const label=selected||catalog?(vehicleType+(radio?" · "+radio:"")):"";st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,org,vehicleType,radio,crew,size:1,rotation:0,label:label||catalog?.type||""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
 const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("taktikplatte-maptiler-key")||"";if(key){$("#mapKey").value=key;if(st.mapStyle==="osm"&&!st.mapStyleSelected)st.mapStyle="satellite"}$("#mapStyle").value=st.mapStyle;$("#hydrantToggle").classList.toggle("active",Boolean(st.hydrantsVisible));setMapStyle();requestAnimationFrame(()=>map.resize())}
 function setMapStyle(){if(!map)return;const style=st.mapStyle,key=$("#mapKey").value.trim();if(style==="osm")return map.setStyle(osm);if(!key){toast("MapTiler-Schlüssel fehlt. OpenStreetMap bleibt aktiv.",true);return}map.setStyle("https://api.maptiler.com/maps/"+(style==="satellite"?"satellite":"streets-v2")+"/style.json?key="+encodeURIComponent(key))}
 $("#mapStyle").onchange=e=>{st.mapStyle=e.target.value;st.mapStyleSelected=true;setMapStyle();persist()};$("#mapKey").onchange=e=>{localStorage.setItem("planspiel-maptiler-key",e.target.value.trim());setMapStyle();persist()};
-function renderTools(){
- const vehicles=$("#vehicleTools");if(vehicles){vehicles.innerHTML=st.vehicles.map(v=>'<button data-vehicle="'+v.id+'" class="vehicle-tool '+(tool==="vehicle:"+v.id?"selected":"")+'">'+icon("fahrzeug",true,v.type)+'<span><strong>'+safe(v.type||"Fahrzeug")+'</strong><small>'+safe(v.radio||"Kein Funkrufname")+' · '+safe(v.crew||"Stärke unbekannt")+'</small></span></button>').join("")||'<p class="helper">Fahrzeuge zuerst in Schritt 1 anlegen.</p>';$$("[data-vehicle]").forEach(b=>b.onclick=()=>{tool="vehicle:"+b.dataset.vehicle;renderTools();toast("Fahrzeug auf der Karte platzieren")})}
- $("#toolkit").innerHTML=kinds.filter(([k])=>k!=="fahrzeug").map(([k,label])=>'<button data-tool="'+k+'" class="symbol-tool '+(tool===k?"selected":"")+'" title="'+safe(label)+'">'+icon(k,true)+'<span>'+label+'</span></button>').join("");
- $$("[data-tool]").forEach(x=>x.onclick=()=>{tool=x.dataset.tool;renderTools();toast("Auf der Karte positionieren: "+kinds.find(k=>k[0]===tool)[1])})
+function catalogSelection(){
+ const org=$("#tacticOrganisation").value,category=$("#tacticCategory").value,choice=$("#tacticSymbol").value;
+ const items=tacticCatalog[org]?.categories[category]||[];
+ const type=items[Number(choice)]||items[0]||"LF 10";
+ return {org,type,kind:tacticalKinds[type]||"fahrzeug"};
 }
+function renderCatalog(preserve=true){
+ const org=$("#tacticOrganisation").value||"fw",categories=Object.keys(tacticCatalog[org]?.categories||{});
+ const cat=$("#tacticCategory"),oldCat=cat.value;
+ cat.innerHTML=categories.map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join("");
+ if(preserve&&categories.includes(oldCat))cat.value=oldCat;
+ const entries=tacticCatalog[org]?.categories[cat.value]||[],list=$("#tacticSymbol"),oldItem=list.value;
+ list.innerHTML=entries.map((x,i)=>'<option value="'+i+'">'+safe(x)+'</option>').join("");
+ if(preserve&&Number(oldItem)<entries.length)list.value=oldItem;
+ renderCatalogPreview();
+}
+function renderCatalogChoices(){
+ const org=$("#tacticOrganisation").value||"fw",types=tacticCatalog[org]?.categories[$("#tacticCategory").value]||[],el=$("#tacticSymbol"),prev=el.value;
+ el.innerHTML=types.map((x,i)=>'<option value="'+i+'">'+safe(x)+'</option>').join("");
+ if(Number(prev)<types.length)el.value=prev;
+ renderCatalogPreview();
+}
+function renderCatalogPreview(){
+ const sel=catalogSelection();
+ $("#tacticPreviewSymbol").innerHTML=sel.kind==="fahrzeug"?tacticalVehicleSvg(sel.type,sel.org):tacticalSceneSvg(sel.kind,sel.type);
+ $("#tacticPreviewName").textContent=sel.type;
+}
+$("#tacticOrganisation").onchange=()=>renderCatalog(false);
+$("#tacticCategory").onchange=renderCatalogChoices;
+$("#tacticSymbol").onchange=renderCatalogPreview;
+$("#tacticPlace").onclick=()=>{
+ if(isViewer||st.ended)return toast("Die Bearbeitung ist nicht möglich.",true);
+ const sel=catalogSelection();
+ tool="catalog";renderTools();toast(sel.type+" ausgewählt. Jetzt die Position auf der Karte anklicken.");
+};
+function renderTools(){
+ const vehicles=$("#vehicleTools");
+ vehicles.innerHTML=st.vehicles.map(v=>'<button type="button" data-vehicle="'+safe(v.id)+'" class="vehicle-tool '+(tool==="vehicle:"+v.id?"selected":"")+'">'+tacticalVehicleSvg(v.type,v.org||"fw",true)+'<span><strong>'+safe(v.type||"Fahrzeug")+'</strong><small>'+safe(v.radio||"Ohne Funkrufname")+'</small></span></button>').join("")||'<p class="helper">In Schritt 1 wurden noch keine Fahrzeuge festgelegt.</p>';
+ $$("[data-vehicle]").forEach(b=>b.onclick=()=>{tool="vehicle:"+b.dataset.vehicle;toast("Fahrzeug auf Karte setzen: "+(st.vehicles.find(v=>v.id===b.dataset.vehicle)?.type||"Fahrzeug"))});
+ $("#toolkit").innerHTML=kinds.filter(([k])=>k!=="fahrzeug").map(([k,label])=>'<button type="button" data-tool="'+k+'" class="symbol-tool '+(tool===k?"selected":"")+'">'+tacticalSceneSvg(k,label,true)+'<span>'+safe(label)+'</span></button>').join("");
+ $$("[data-tool]").forEach(b=>b.onclick=()=>{tool=b.dataset.tool;toast("Zeichen auf Karte positionieren")});
+}
+renderCatalog(false);
 let reviewSnapshot=null;
 function renderMarkers(override){
  if(!map)return;markers.forEach(m=>m.remove());markers=[];
@@ -293,10 +331,10 @@ function renderMarkers(override){
   if(isViewer&&obj.hiddenToViewer)continue;
   const el=document.createElement("button");el.className="map-pin";if(obj.type==="fahrzeug")el.classList.add("vehicle-marker");if(obj.type==="brand")el.classList.add("brand-marker");el.type="button";
   const px=obj.type==="fahrzeug"?Math.max(34,Math.min(85,Math.round(9/(156543.03392*Math.cos(obj.lat*Math.PI/180)/Math.pow(2,map.getZoom()))))):obj.type==="brand"?46:30;
-  const symbol=icon(obj.type,true,obj.vehicleType||obj.label||"");
+  const symbol=obj.type==="fahrzeug"?tacticalVehicleSvg(obj.vehicleType||obj.label||"FW",obj.org||"fw",true):tacticalSceneSvg(obj.type,obj.label||obj.type,true);
   el.innerHTML='<span class="pin-graphic" style="display:inline-flex;transform:rotate('+Number(obj.rotation||0)+'deg)">'+symbol+'</span>'+(obj.label?'<span>'+safe(obj.label)+'</span>':"");
   el.querySelector("svg")?.setAttribute("width",String(Math.max(26,Math.round(px*(obj.size||1)))));
-  el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)*(obj.type==="fahrzeug"?1.34:1)))));
+  el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)*(obj.type==="fahrzeug"?.85:1)))));
   const effectCue=reviewSnapshot?.cue||st.activeCue;const intensity=obj.type==="brand"?Number(effectCue?.fire||0):obj.type==="rauch"?Number(effectCue?.smoke||0):0;
   if(intensity>0){el.classList.add(obj.type==="brand"?"fire-active":"smoke-active");const v=el.querySelector("svg");if(v){v.setAttribute("width",String(Math.min(95,Number(v.getAttribute("width"))*(1+intensity*.23))));v.setAttribute("height",String(Math.min(95,Number(v.getAttribute("height"))*(1+intensity*.23))))}}
   el.title=(obj.label||obj.type)+" · "+(isViewer?"Einsatzdarstellung":"bearbeiten, drehen oder entfernen");
