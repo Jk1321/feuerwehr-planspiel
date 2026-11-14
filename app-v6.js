@@ -10,6 +10,7 @@ let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizar
 let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
+function migrateScenarioWind(x){if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);if(Number.isFinite(kmh)){x.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length)}}x.windUnit="bft";return x}
 const stamp=()=>String(Math.floor(st.clock/3600)).padStart(2,"0")+":"+String(Math.floor(st.clock%3600/60)).padStart(2,"0")+":"+String(st.clock%60).padStart(2,"0");
 function log(type,detail){st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!isViewer){if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}}
 function persist(){try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn(e)}if(!isViewer)bc?.postMessage({kind:"sync",state:st})}
@@ -261,7 +262,7 @@ $("#clearMap").onclick=()=>{if(confirm("Alle taktischen Zeichen von der Karte en
 $("#openViewer").onclick=()=>{storeForm();persist();window.open(location.origin+location.pathname+"?viewer=1&v=6.0","_blank")};
 $("#saveBtn").onclick=()=>{storeForm();toast("Szenario im Browser gespeichert")};
 $("#exportBtn").onclick=()=>{storeForm();const b=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="taktikplatte-szenario.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-$("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...j,step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
+$("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...migrateScenarioWind(j),step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
 $("#newBtn").onclick=()=>{if(confirm("Neues Szenario beginnen? Gespeicherte Daten können überschrieben werden.")){st=initial();photos=[];photoIndex=0;go(0,true)}};
 $("#startClock").onclick=()=>{if(st.ended)return;if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";return}let last=Date.now();timer=setInterval(()=>{let now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp();persist()},1000);$("#startClock").textContent="Pause";persist()};
 $("#resetClock").onclick=()=>{if(st.ended)return;st.clock=0;$("#timeCounter").textContent=stamp();persist()};
@@ -291,7 +292,7 @@ $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;log("Teilneh
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;log("Teilnehmerfreigabe",st.releaseMap?"Lagekarte freigegeben":"Lagekarte ausgeblendet");persist()};
 
 renderTools();form();$("#timeCounter").textContent=stamp();renderEnded();
-function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...j,step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
+function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...migrateScenarioWind(j),step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
 $("#landingNew").onclick=()=>{st=initial();photos=[];photoIndex=0;document.body.classList.remove("landing-mode");go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
 $("#landingFile").onchange=e=>importScenario(e.target.files?.[0]);
