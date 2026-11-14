@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.0**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.2**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -9,6 +9,14 @@ Aktueller Entwicklungsstand: **Version 6.0**. Die Anwendung ist eine Ausbildungs
 3. **Optionale Lageentwicklung**: Vorbereitete Ereignisse (erst nach Freigabe durch die Planspielleitung) oder klassisches statisches Planspiel durch Überspringen dieses Schritts.
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
+
+
+## Verbesserungen in Version 6.2
+
+- **Einspielungen:** Jede manuelle Freigabe löst in der Teilnehmer- und Regieansicht einen roten, 3 Sekunden dauernden Blinkimpuls der Lagemeldung aus. Danach bleibt der Meldungstext normal lesbar.
+- **Karte:** Die Fahrzeugtypen (u. a. LF, HLF, StLF/TLF, DLK, RW, ELW/MTF und Rettungsdienst) erhalten unterscheidbare, selbst gezeichnete Draufsichten. Brandstellen zeigen eine mehrschichtige SVG-Flamme; die Effekte sind grafisch und keine Brandsimulation.
+- **Uhr:** Der Button „Beenden“ stoppt und sperrt die Übungszeit und weitere Einspielungen. Die Übungsleitung und die Teilnehmeransicht sehen den Abschluss. Das Übungsprotokoll bleibt erhalten.
+- **Wetter:** Windstärke wird nun auf der Beaufort-Skala (0–12 Bft) eingegeben. Bereits vorhandene Windgeschwindigkeiten in km/h werden beim Laden alter Szenarien ungefähr in Bft überführt.
 
 ## Regiezentrale – Version 6.0
 
