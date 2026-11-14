@@ -249,7 +249,7 @@ $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")|
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
 function updateSummary(){
- const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Einsatzkräfte",st.vehicles.length+" Fahrzeug(e)"]];
+ const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
@@ -415,7 +415,16 @@ $("#openViewer").onclick=()=>{storeForm();persist();window.open(location.origin+
 $("#saveBtn").onclick=()=>{storeForm();toast("Szenario im Browser gespeichert")};
 $("#exportBtn").onclick=()=>{storeForm();const b=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="taktikplatte-szenario.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...migrateScenarioWind(j),step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
-$("#newBtn").onclick=()=>{if(confirm("Neues Szenario beginnen? Gespeicherte Daten können überschrieben werden.")){st=initial();photos=[];photoIndex=0;go(0,true)}};
+function newExercise(){
+ if(timer){clearInterval(timer);timer=null}
+ st=initial();photos=[];photoIndex=0;tool="";reviewSnapshot=null;
+ $("#timeCounter").textContent="00:00:00";$("#startClock").textContent="Start";
+ $("#exerciseEnded").hidden=true;$("#participantEnded").hidden=true;
+ $("#radioText").value="";
+ renderEnded();renderRadioMessages();
+ document.body.classList.remove("exercise-finished");
+}
+$("#newBtn").onclick=()=>{if(confirm("Neues Szenario beginnen? Gespeicherte Daten können überschrieben werden.")){newExercise();go(0,true);renderTools()}};
 $("#startClock").onclick=()=>{
  if(st.ended)return;
  if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";persist();return}
@@ -456,7 +465,7 @@ $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;persist()};
 
 renderTools();form();renderRadioMessages();$("#timeCounter").textContent=stamp();renderEnded();
 function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...migrateScenarioWind(j),step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
-$("#landingNew").onclick=()=>{st=initial();photos=[];photoIndex=0;document.body.classList.remove("landing-mode");go(0,true);renderTools()};
+$("#landingNew").onclick=()=>{newExercise();document.body.classList.remove("landing-mode");go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
 $("#landingFile").onchange=e=>importScenario(e.target.files?.[0]);
 $("#homeBtn").onclick=()=>{storeForm();persist();document.body.classList.add("landing-mode");window.scrollTo(0,0)};
