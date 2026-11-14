@@ -5,6 +5,72 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const isViewer=new URLSearchParams(location.search).has("viewer");
 const steps=["Alarmierung","Einsatzobjekt","Lageentwicklung","Planspiel"];
 const kinds=[["fahrzeug","Fahrzeug","Fw"],["bereitstellung","Bereitstellungsraum","BR"],["wasser","Wasserentnahme","WE"],["leitung","Einsatzleitung","EL"],["abschnitt","Einsatzabschnitt","EA"],["brand","Brand","F"],["rauch","Rauch","R"],["person","Person","P"],["verletzt","Verletzte Person","V"],["vermisst","Vermisste Person","?"],["gerettet","Gerettete Person","G"],["tot","Tote Person","†"],["gefahr","Akute Gefahr","!"],["vu","Verkehrsunfall","VU"]];
+const tacticCatalog={
+ fw:{name:"Feuerwehr",color:"#d4202b",categories:{
+  "Löschfahrzeuge":["LF 20","LF 10","LF 8","LF-KatS","HLF 20","HLF 10","MLF","TSF","TSF-W"],
+  "Tanklöschfahrzeuge":["TLF 4000","TLF 3000","TLF 2000","StLF 20/25","StLF 20","StLF 10"],
+  "Hubrettungsfahrzeuge":["DLK 23","DLK 18","DLK 12","TM 32","GM 30"],
+  "Rüst- und Gerätewagen":["RW","RW 1","GW-L1","GW-L2","GW-G","GW-A","GW-Mess"],
+  "Führung / Transport":["ELW 1","ELW 2","KdoW","MTF","MTW"],
+  "Weitere Fahrzeuge":["WLF","AB-Logistik","AB-Atemschutz","SW 2000","GW-T","FLF","MZF"],
+  "Einsatzarten":["Feuer/Brandstelle","Verkehrsunfall","VU mit LKW","Zugunglück","Flugzeugunglück","Gefahrgutunfall","Gebäudeeinsturz","Wassernotstand","Person in Notlage","Tier in Notlage"],
+  "Wasserversorgung":["Hydrant","Tiefbrunnen","Wasserentnahmestelle","Wasserbehälter","Pumpenstandort"],
+  "Führung / Personen":["Einsatzleitung","Bereitstellungsraum","Einsatzabschnitt","Vermisste Person","Verletzte Person","Gerettete Person"]
+ }},
+ rd:{name:"Rettungsdienst",color:"#fafafa",categories:{
+  "Rettungsmittel":["RTW","NEF","NAW","KTW","KTW-B","NKTW","GRTW","ITW"],
+  "Luftrettung":["RTH","ITH"],
+  "Führung / Transport":["OrgL","LNA","ELW RD","GW-San","MTW RD"],
+  "Patienten / Einsatzstellen":["Person in Notlage","Verletzte Person","Gerettete Person","Behandlungsplatz","Patientenablage"]
+ }},
+ thw:{name:"Technisches Hilfswerk",color:"#2867c9",categories:{
+  "Bergung / Technik":["GKW","MzGW","MLW IV","LKW-K","Kipper","Radlader"],
+  "Transport / Führung":["MTW OV","MTW TZ","FüKW","PKW OV"],
+  "Fachgruppen":["FGr N","FGr WP","FGr Räumen","FGr Brückenbau"],
+  "Schadenstellen":["Gebäudeeinsturz","Wassernotstand","Person in Notlage","Einsatzleitung"]
+ }},
+ pol:{name:"Polizei",color:"#286d53",categories:{
+  "Einsatzfahrzeuge":["FuStW","MTW Polizei","GruKw","Befehlskraftwagen","Motorrad Polizei"],
+  "Einsatzstellen":["Verkehrsunfall","VU mit LKW","Absperrung","Person in Notlage","Einsatzleitung"]
+ }}
+};
+const tacticalKinds={
+ "Feuer/Brandstelle":"brand","Verkehrsunfall":"vu","VU mit LKW":"vu_lkw","Zugunglück":"zug","Flugzeugunglück":"flugzeug",
+ "Gefahrgutunfall":"gefahrgut","Gebäudeeinsturz":"einsturz","Wassernotstand":"wassergefahr",
+ "Person in Notlage":"person","Tier in Notlage":"tier","Hydrant":"hydrant","Tiefbrunnen":"tiefbrunnen",
+ "Wasserentnahmestelle":"wasser","Wasserbehälter":"wasserbehaelter","Pumpenstandort":"pumpe",
+ "Einsatzleitung":"leitung","Bereitstellungsraum":"bereitstellung","Einsatzabschnitt":"abschnitt",
+ "Vermisste Person":"vermisst","Verletzte Person":"verletzt","Gerettete Person":"gerettet",
+ "Behandlungsplatz":"behandlungsplatz","Patientenablage":"patientenablage","Absperrung":"absperrung"
+};
+function orgColor(org){return tacticCatalog[org]?.color||"#d4202b"}
+function tacticalVehicleSvg(type,org="fw",small=false){
+ const color=orgColor(org),textColor=org==="rd"?"#132f43":"#fff",outline=org==="rd"?"#23384a":"#132938";
+ const label=String(type||"FW").replace(/[^A-Za-z0-9äöüÄÖÜ /-]/g,"").slice(0,12);
+ const w=small?46:62,h=small?40:52;
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 68 54" role="img" aria-label="'+safe(label)+'">'+
+ '<rect x="6" y="8" width="56" height="36" rx="2" fill="'+color+'" stroke="'+outline+'" stroke-width="2.3"/>'+
+ '<path d="M6 13 62 40M6 40 62 13" stroke="'+(org==="rd"?"#637b8d":"#f4eff0")+'" stroke-opacity=".6" stroke-width="1.5"/>'+
+ '<rect x="12" y="17" width="44" height="16" rx="2" fill="'+color+'" stroke="'+(org==="rd"?"#5f7480":textColor)+'" stroke-opacity=".45"/>'+
+ '<text x="34" y="28.5" text-anchor="middle" font-size="'+(label.length>8?8.2:label.length>5?10:12)+'" font-weight="800" fill="'+textColor+'">'+safe(label)+'</text>'+
+ '<circle cx="17" cy="47" r="4" fill="#fff" stroke="#172b3e" stroke-width="2"/><circle cx="51" cy="47" r="4" fill="#fff" stroke="#172b3e" stroke-width="2"/></svg>';
+}
+function tacticalSceneSvg(kind,label,small=false){
+ const sz=small?40:48;
+ const red=["brand","hydrant","tiefbrunnen","wasser","wasserbehaelter","pumpe"].includes(kind);
+ const border=red?"#cf1f2c":"#111f2a",fill=red?"#fff2f2":"#fff";
+ const code=({brand:"F",vu:"VU",vu_lkw:"LKW",zug:"ZUG",flugzeug:"FLG",gefahrgut:"GG",einsturz:"E",wassergefahr:"W",tier:"T",
+ hydrant:"H",tiefbrunnen:"TB",wasser:"WE",wasserbehaelter:"WB",pumpe:"P",leitung:"EL",bereitstellung:"BR",abschnitt:"EA",
+ person:"P",verletzt:"V",vermisst:"?",gerettet:"G",behandlungsplatz:"BHP",patientenablage:"PA",absperrung:"X"})[kind]||String(label||"?").slice(0,3);
+ const round=["hydrant","tiefbrunnen","wasser","wasserbehaelter","pumpe"].includes(kind);
+ const diamond=["person","verletzt","vermisst","gerettet"].includes(kind);
+ let shape=round?'<circle cx="26" cy="24" r="19" fill="'+(red?"#d72a31":fill)+'" stroke="'+border+'" stroke-width="2"/>':
+ diamond?'<path d="M26 4 46 24 26 44 6 24Z" fill="'+fill+'" stroke="'+border+'" stroke-width="2.5"/>':
+ '<path d="M26 45 4 7H48Z" fill="'+fill+'" stroke="'+border+'" stroke-width="2.4"/>';
+ if(kind==="brand")shape='<path d="M8 44 17 7 25 43 31 5 42 44Z" fill="#fff" stroke="#cf1624" stroke-width="2.7"/><path d="M19 41 22 22M33 40 34 22" stroke="#d51f2f" stroke-width="2.5"/>';
+ const textFill=round?"#fff":border;
+ return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 52 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+safe(label||kind)+'">'+shape+(kind==="brand"?"":'<text x="26" y="'+(round?29:diamond?29:27)+'" text-anchor="middle" font-size="'+(code.length>2?10:14)+'" font-weight="900" fill="'+textFill+'">'+safe(code)+'</text>')+'</svg>';
+}
 const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],clock:0,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
 let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
