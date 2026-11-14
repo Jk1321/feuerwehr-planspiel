@@ -5,10 +5,11 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const isViewer=new URLSearchParams(location.search).has("viewer");
 const steps=["Alarmierung","Einsatzobjekt","Lageentwicklung","Planspiel"];
 const kinds=[["fahrzeug","Fahrzeug","Fw"],["bereitstellung","Bereitstellungsraum","BR"],["wasser","Wasserentnahme","WE"],["leitung","Einsatzleitung","EL"],["abschnitt","Einsatzabschnitt","EA"],["brand","Brand","F"],["rauch","Rauch","R"],["person","Person","P"],["verletzt","Verletzte Person","V"],["vermisst","Vermisste Person","?"],["gerettet","Gerettete Person","G"],["tot","Tote Person","†"],["gefahr","Akute Gefahr","!"],["vu","Verkehrsunfall","VU"]];
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],clock:0,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],hydrantsVisible:false,hydrants:[]});
-let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x)st={...initial(),...x}}catch{}
-let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],clock:0,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],hydrantsVisible:false,hydrants:[]});
+let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
+let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
+const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
 const stamp=()=>String(Math.floor(st.clock/3600)).padStart(2,"0")+":"+String(Math.floor(st.clock%3600/60)).padStart(2,"0")+":"+String(st.clock%60).padStart(2,"0");
 function log(type,detail){st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!isViewer){if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}}
 function persist(){try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn(e)}if(!isViewer)bc?.postMessage({kind:"sync",state:st})}
@@ -48,8 +49,8 @@ function renderCues(){
  $("#dynamicBlock").classList.toggle("disabled",!st.dynamic);
  renderHistory();
 }
-function playCue(c){c.state="played";st.activeCue={type:c.type,description:c.description,fire:c.fire,smoke:c.smoke};log("Einspielung",c.description);renderCues();updateSummary();renderParticipantScene();persist();toast("Lageänderung freigegeben")}
-$("#applyNow").onclick=()=>{const text=$("#liveText").value.trim();if(!text)return;st.activeCue={description:text,type:$("#liveType").value,fire:+$("#liveFire").value,smoke:+$("#liveSmoke").value};log("Spontane Lageänderung",text);$("#liveText").value="";renderParticipantScene();persist();toast("Spontane Lageänderung freigegeben")};
+function playCue(c){if(st.ended)return toast("Der Einsatz ist beendet.",true);c.state="played";st.activeCue={type:c.type,description:c.description,fire:c.fire,smoke:c.smoke};st.cueSignal={id:uid(),at:Date.now()};log("Einspielung",c.description);renderCues();updateSummary();renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Lageänderung freigegeben")}
+$("#applyNow").onclick=()=>{if(st.ended)return toast("Der Einsatz ist beendet.",true);const text=$("#liveText").value.trim();if(!text)return;st.activeCue={description:text,type:$("#liveType").value,fire:+$("#liveFire").value,smoke:+$("#liveSmoke").value};st.cueSignal={id:uid(),at:Date.now()};log("Spontane Lageänderung",text);$("#liveText").value="";renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Spontane Lageänderung freigegeben")};
 function renderPhoto(){const img=$("#frontPhoto"),empty=$("#frontEmpty");if(st.imageUrl){img.src=st.imageUrl;img.hidden=false;empty.hidden=true;img.onerror=()=>{img.hidden=true;empty.hidden=false;empty.textContent="Bild konnte nicht geladen werden. Eine andere Aufnahme wählen.";};}else{img.hidden=true;empty.hidden=false;empty.textContent="Wähle eine Adresse und suche eine verfügbare Straßenaufnahme."}
 $("#photoCredit").textContent=st.imageCredit||"Noch keine Bildquelle ausgewählt";$("#photoAddressHint").textContent=st.address||"In Schritt 1 eine Einsatzadresse angeben.";$("#photoCount").textContent=photos.length?photoIndex+1+" / "+photos.length:"";renderParticipantScene()}
 function renderVersions(){$("#versions").innerHTML=st.versions.map((v,i)=>'<article class="cue"><div><strong>'+safe(v.title)+'</strong><p>'+safe(v.description)+' · Bildvorlage gespeichert</p></div><button class="small" data-version="'+i+'">Als Ansicht wählen</button></article>').join("")||'<p class="helper">Noch keine Bildvarianten gespeichert.</p>';$$("[data-version]").forEach(x=>x.onclick=()=>{let v=st.versions[+x.dataset.version];st.scene=v.description;st.imageUrl=v.imageUrl;st.imageCredit=v.imageCredit;form();persist()})}
@@ -106,14 +107,29 @@ $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")|
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
 function updateSummary(){
- const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+(st.windSpeed||"–")+" km/h"],["Einsatzkräfte",st.vehicles.length+" Fahrzeug(e)"]];
+ const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Einsatzkräfte",st.vehicles.length+" Fahrzeug(e)"]];
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
 function renderParticipantScene(){const p=$("#participantPhoto"),w=$("#participantPhotoEmpty");if(st.imageUrl&&(!isViewer||st.releaseFront!==false)){p.src=st.imageUrl;p.hidden=false;w.hidden=true;p.onerror=()=>{p.hidden=true;w.hidden=false}}else{p.hidden=true;w.hidden=false;w.textContent=isViewer&&st.releaseFront===false?"Frontalansicht noch nicht freigegeben":"Noch keine Straßenaufnahme ausgewählt."}
-const c=st.activeCue;$("#participantCue").textContent=c?c.description:(st.meldebild||"Ausgangslage – Erkundung beginnen.");$("#participantSceneTitle").textContent=c?"Aktuelle Lage":"Erstes Lagebild";
+const c=st.activeCue;$("#participantCue").textContent=c?c.description:(st.meldebild||"Ausgangslage – Erkundung beginnen.");$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?"Neue Lagemeldung":"Erstes Lagebild";
 $("#participantSceneNote").textContent=st.imageCredit||"Frontalansicht des Einsatzobjekts";
-if(isViewer)refreshReleaseViews();
+if(isViewer)refreshReleaseViews();renderEnded();
+}
+function renderEnded(){
+ const isDone=Boolean(st.ended),panel=$("#exerciseEnded");
+ if(panel){panel.hidden=!isDone;$("#exerciseEndTime").textContent=isDone?"Endzeit "+(st.endedAt||stamp()):""}
+ document.body.classList.toggle("exercise-finished",isDone);
+ if(isDone){$("#startClock").textContent="Beendet";$("#timeCounter").textContent=st.endedAt||stamp();$("#participantSceneTitle").textContent="Einsatz beendet";}
+}
+function signalCueFlash(){
+ const signal=st.cueSignal,el=$("#cueReadout");
+ if(!signal||!el||signal.id===lastSeenCue||st.ended)return;
+ lastSeenCue=signal.id;
+ if(Date.now()-Number(signal.at)>4000)return;
+ el.classList.remove("cue-flash");void el.offsetWidth;el.classList.add("cue-flash");
+ clearTimeout(flashTimer);
+ flashTimer=setTimeout(()=>el.classList.remove("cue-flash"),3000);
 }
 const osm={version:8,sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"osm",type:"raster",source:"osm"}]};
 function setupMap(){if(map){map.resize();renderMarkers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
@@ -206,11 +222,20 @@ $("#saveBtn").onclick=()=>{storeForm();toast("Szenario im Browser gespeichert")}
 $("#exportBtn").onclick=()=>{storeForm();const b=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="taktikplatte-szenario.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...j,step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
 $("#newBtn").onclick=()=>{if(confirm("Neues Szenario beginnen? Gespeicherte Daten können überschrieben werden.")){st=initial();photos=[];photoIndex=0;go(0,true)}};
-$("#startClock").onclick=()=>{if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";return}let last=Date.now();timer=setInterval(()=>{let now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp()},1000);$("#startClock").textContent="Pause"};
-$("#resetClock").onclick=()=>{st.clock=0;$("#timeCounter").textContent=stamp();persist()};
+$("#startClock").onclick=()=>{if(st.ended)return;if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";return}let last=Date.now();timer=setInterval(()=>{let now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp()},1000);$("#startClock").textContent="Pause"};
+$("#resetClock").onclick=()=>{if(st.ended)return;st.clock=0;$("#timeCounter").textContent=stamp();persist()};
+
+$("#endExercise").onclick=()=>{
+ if(st.ended)return;
+ if(!confirm("Planspiel jetzt beenden? Die Uhr und weitere Einspielungen werden gesperrt."))return;
+ if(timer){clearInterval(timer);timer=null}
+ st.ended=true;st.endedAt=stamp();st.cueSignal=null;
+ log("Übungsende","Planspiel durch Übungsleitung beendet");
+ renderEnded();renderParticipantScene();persist();toast("Einsatz beendet. Die Lage wurde abgeschlossen.")
+};
 $("#printBtn").onclick=()=>{const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(st.windSpeed)+" km/h</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
-function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();refreshReleaseViews();bc?.postMessage({kind:"request"})}
-if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
+function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();bc?.postMessage({kind:"request"})}
+if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
 window.addEventListener("beforeunload",persist);
 
 function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory()}
@@ -224,7 +249,7 @@ $("#showViewerMap").checked=st.releaseMap!==false;
 $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;log("Teilnehmerfreigabe",st.releaseFront?"Frontalansicht freigegeben":"Frontalansicht ausgeblendet");persist()};
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;log("Teilnehmerfreigabe",st.releaseMap?"Lagekarte freigegeben":"Lagekarte ausgeblendet");persist()};
 
-renderTools();form();$("#timeCounter").textContent=stamp();
+renderTools();form();$("#timeCounter").textContent=stamp();renderEnded();
 function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...j,step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
 $("#landingNew").onclick=()=>{st=initial();photos=[];photoIndex=0;document.body.classList.remove("landing-mode");go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
