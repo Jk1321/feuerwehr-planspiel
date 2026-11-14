@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.2**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.3**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,11 @@ Aktueller Entwicklungsstand: **Version 6.2**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Änderungen in Version 6.3
+
+- **Einspielungen:** Die Angaben zur Brand- bzw. Rauchintensität erscheinen nur bei der entsprechenden Kategorie. Für alle anderen Kategorien sind diese Felder ausgeblendet. Beide Intensitäten werden über ein gemeinsames Auswahlfeld erfasst; eine Personen- oder Fahrzeugmeldung verändert die bereits bestehende Brand-/Rauchlage nicht.
+- **Dokumentation:** Das Protokoll und die Lagehistorie beginnen ausschließlich mit dem ersten Klick auf **Start** der Übungsuhr. Vorbereitende Kartenbewegungen, Szenenbearbeitungen und Ereignisänderungen werden nicht als Übungsdurchlauf protokolliert. Beim ersten Start werden vorhandene ungestartete Protokolleinträge zurückgesetzt. Erst nach dem Start können Einspielungen freigegeben und Befehle dokumentiert werden.
 
 ## Verbesserungen in Version 6.2
 
