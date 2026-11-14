@@ -5,9 +5,9 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const isViewer=new URLSearchParams(location.search).has("viewer");
 const steps=["Alarmierung","Einsatzobjekt","Lageentwicklung","Planspiel"];
 const kinds=[["fahrzeug","Fahrzeug","Fw"],["bereitstellung","Bereitstellungsraum","BR"],["wasser","Wasserentnahme","WE"],["leitung","Einsatzleitung","EL"],["abschnitt","Einsatzabschnitt","EA"],["brand","Brand","F"],["rauch","Rauch","R"],["person","Person","P"],["verletzt","Verletzte Person","V"],["vermisst","Vermisste Person","?"],["gerettet","Gerettete Person","G"],["tot","Tote Person","†"],["gefahr","Akute Gefahr","!"],["vu","Verkehrsunfall","VU"]];
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],clock:0,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[]});
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],clock:0,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x)st={...initial(),...x}}catch{}
-let map=null,markers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
+let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const stamp=()=>String(Math.floor(st.clock/3600)).padStart(2,"0")+":"+String(Math.floor(st.clock%3600/60)).padStart(2,"0")+":"+String(st.clock%60).padStart(2,"0");
 function log(type,detail){st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!isViewer){if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}}
@@ -113,9 +113,9 @@ if(isViewer)refreshReleaseViews();
 }
 const osm={version:8,sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"osm",type:"raster",source:"osm"}]};
 function setupMap(){if(map){map.resize();renderMarkers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
-map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers()});map.on("style.load",()=>renderMarkers());map.on("moveend",()=>{if(isViewer)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
+map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers();renderHydrants()});map.on("style.load",()=>{renderMarkers();renderHydrants()});map.on("moveend",()=>{if(isViewer)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
 map.on("click",e=>{if(isViewer||!tool)return;const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const type=selected?"fahrzeug":tool;st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,vehicleId:selected?.id||null,vehicleType:selected?.type||"",size:1,rotation:0,label:selected?[(selected.type||"Fahrzeug"),selected.radio].filter(Boolean).join(" · "):""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
-const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("taktikplatte-maptiler-key")||"";if(key){$("#mapKey").value=key;if(st.mapStyle==="osm"&&!st.mapStyleSelected)st.mapStyle="satellite"}$("#mapStyle").value=st.mapStyle;setMapStyle();requestAnimationFrame(()=>map.resize())}
+const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("taktikplatte-maptiler-key")||"";if(key){$("#mapKey").value=key;if(st.mapStyle==="osm"&&!st.mapStyleSelected)st.mapStyle="satellite"}$("#mapStyle").value=st.mapStyle;$("#hydrantToggle").classList.toggle("active",Boolean(st.hydrantsVisible));setMapStyle();requestAnimationFrame(()=>map.resize())}
 function setMapStyle(){if(!map)return;const style=st.mapStyle,key=$("#mapKey").value.trim();if(style==="osm")return map.setStyle(osm);if(!key){toast("MapTiler-Schlüssel fehlt. OpenStreetMap bleibt aktiv.",true);return}map.setStyle("https://api.maptiler.com/maps/"+(style==="satellite"?"satellite":"streets-v2")+"/style.json?key="+encodeURIComponent(key))}
 $("#mapStyle").onchange=e=>{st.mapStyle=e.target.value;st.mapStyleSelected=true;setMapStyle();persist()};$("#mapKey").onchange=e=>{localStorage.setItem("planspiel-maptiler-key",e.target.value.trim());setMapStyle();persist()};
 function renderTools(){
@@ -135,6 +135,8 @@ function renderMarkers(override){
   el.innerHTML='<span class="pin-graphic" style="display:inline-flex;transform:rotate('+Number(obj.rotation||0)+'deg)">'+symbol+'</span>'+(obj.label?'<span>'+safe(obj.label)+'</span>':"");
   el.querySelector("svg")?.setAttribute("width",String(Math.max(26,Math.round(px*(obj.size||1)))));
   el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)))));
+  const intensity=obj.type==="brand"?Number(st.activeCue?.fire||0):obj.type==="rauch"?Number(st.activeCue?.smoke||0):0;
+  if(intensity>0){el.classList.add(obj.type==="brand"?"fire-active":"smoke-active");const v=el.querySelector("svg");if(v){v.setAttribute("width",String(Math.min(95,Number(v.getAttribute("width"))*(1+intensity*.23))));v.setAttribute("height",String(Math.min(95,Number(v.getAttribute("height"))*(1+intensity*.23))))}}
   el.title=(obj.label||obj.type)+" · "+(isViewer?"Einsatzdarstellung":"bearbeiten, drehen oder entfernen");
   const marker=new maplibregl.Marker({element:el,draggable:!isViewer&&!reviewSnapshot,anchor:"center"}).setLngLat([obj.lon,obj.lat]).addTo(map);
   if(!isViewer&&!reviewSnapshot){
@@ -165,6 +167,35 @@ function refreshReleaseViews(){
  banner.textContent="Die Lagekarte wurde noch nicht durch die Übungsleitung freigegeben.";
  if(st.releaseMap!==false&&map)requestAnimationFrame(()=>map.resize())
 }
+
+function renderHydrants(){
+ if(!map)return;
+ hydrantMarkers.forEach(x=>x.remove());hydrantMarkers=[];
+ if(!st.hydrantsVisible)return;
+ for(const h of (st.hydrants||[])){
+  const el=document.createElement("span");el.className="hydrant-pin";el.textContent=h.type==="pillar"?"Ü":"U";
+  el.title="OSM "+(h.type==="pillar"?"Überflurhydrant":"Hydrant")+(h.diameter?" · DN "+h.diameter:"")+" · Position ungeprüft";
+  const m=new maplibregl.Marker({element:el,anchor:"center"}).setLngLat([h.lon,h.lat]).addTo(map);
+  hydrantMarkers.push(m)
+ }
+}
+$("#hydrantToggle").onclick=async()=>{
+ if(st.hydrantsVisible){st.hydrantsVisible=false;$("#hydrantToggle").classList.remove("active");renderHydrants();persist();return}
+ if(st.hydrants?.length){st.hydrantsVisible=true;$("#hydrantToggle").classList.add("active");renderHydrants();persist();return}
+ if(!map)return toast("Zuerst die Karte öffnen.",true);
+ const btn=$("#hydrantToggle");btn.disabled=true;btn.textContent="Hydranten laden …";
+ try{
+  const b=map.getBounds();const south=Math.max(-90,b.getSouth()),north=Math.min(90,b.getNorth()),west=b.getWest(),east=b.getEast();
+  if(Math.abs(east-west)>.065||Math.abs(north-south)>.065)throw Error("Bitte näher an das Einsatzobjekt heranzoomen (Zoomstufe 15 oder höher).");
+  const q='[out:json][timeout:18];node["emergency"="fire_hydrant"]('+south+','+west+','+north+','+east+');out 200;';
+  const res=await fetch("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(q));
+  if(!res.ok)throw Error("OSM-Abfrage momentan nicht verfügbar (HTTP "+res.status+").");
+  const json=await res.json();
+  st.hydrants=(json.elements||[]).filter(o=>typeof o.lat==="number"&&typeof o.lon==="number").slice(0,200).map(o=>({lat:o.lat,lon:o.lon,type:o.tags?.["fire_hydrant:type"]||"",diameter:o.tags?.["fire_hydrant:diameter"]||""}));
+  st.hydrantsVisible=true;renderHydrants();persist();
+  toast(st.hydrants.length+" auf OpenStreetMap kartierte Hydranten angezeigt (Angaben ungeprüft).")
+ }catch(e){toast(e.message,true)}finally{btn.disabled=false;btn.textContent="Hydranten";btn.classList.toggle("active",st.hydrantsVisible)}
+};
 $("#clearMap").onclick=()=>{if(confirm("Alle taktischen Zeichen von der Karte entfernen?")){st.objects=[];renderMarkers();persist()}};
 $("#openViewer").onclick=()=>{storeForm();persist();window.open(location.origin+location.pathname+"?viewer=1&v=6.0","_blank")};
 $("#saveBtn").onclick=()=>{storeForm();toast("Szenario im Browser gespeichert")};
@@ -175,7 +206,7 @@ $("#startClock").onclick=()=>{if(timer){clearInterval(timer);timer=null;$("#star
 $("#resetClock").onclick=()=>{st.clock=0;$("#timeCounter").textContent=stamp();persist()};
 $("#printBtn").onclick=()=>{const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(st.windSpeed)+" km/h</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
 function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();refreshReleaseViews();bc?.postMessage({kind:"request"})}
-if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();refreshReleaseViews();if(map){renderMarkers();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
+if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
 window.addEventListener("beforeunload",persist);
 
 function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory()}
