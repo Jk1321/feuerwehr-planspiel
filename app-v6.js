@@ -17,7 +17,48 @@ function toast(msg,err=false){const el=$("#toast");el.textContent=msg;el.classNa
 const put=(id,key)=>{const el=$("#"+id);if(el)el.value=st[key]??""};
 const get=(id,key)=>{const el=$("#"+id);if(el)st[key]=el.value};
 const meter=(p,q)=>{const r=Math.PI/180,x=(q.lat-p.lat)*r,y=(q.lon-p.lon)*r;const a=Math.sin(x/2)**2+Math.cos(p.lat*r)*Math.cos(q.lat*r)*Math.sin(y/2)**2;return 12742000*Math.asin(Math.sqrt(a))};
-function icon(kind,small=false){const s=small?26:40,c=kind==="fahrzeug"?"#d52f37":kind==="brand"?"#ec452b":kind==="rauch"?"#71838f":kind==="gefahr"?"#e7a835":kind==="leitung"?"#efc75b":kind==="wasser"?"#338ada":"#183348";const wrap=inner=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+inner+"</svg>";
+function vehicleDrawing(type="",small=false){
+ const t=String(type||"").toUpperCase().replace(/\s+/g," ");
+ const ladder=/\b(DLK|DLA|DL|TM|GM)\b/.test(t);
+ const rescue=/\b(RW|GW[- ]?G|GW[- ]?L)\b/.test(t);
+ const tanker=/\b(TLF|STLF)\b/.test(t);
+ const command=/\b(ELW|MTF|MTW|KDO)\b/.test(t);
+ const ambulance=/\b(RTW|KTW|NEF)\b/.test(t);
+ const truck=!command&&!ambulance;
+ const label=ladder?"DLK":rescue?"RW":tanker?"TLF":command?"ELW":ambulance?"RD":/HLF/.test(t)?"HLF":/LF/.test(t)?"LF":"FW";
+ const width=small?34:52;
+ const background=ambulance?"#f6f2e2":command?"#f2f4f7":"#cf2930";
+ const side=ambulance?"#cf3535":command?"#df272c":"#9f1b24";
+ let equipment="";
+ if(ladder){
+  equipment='<rect x="15" y="30" width="34" height="43" rx="3" fill="#dadfe3" stroke="#43566a" stroke-width="1.5"/><g stroke="#788a99" stroke-width="2"><path d="M18 36h28M18 42h28M18 48h28M18 54h28M18 60h28M18 66h28"/></g><circle cx="32" cy="52" r="7" fill="#9faebd" stroke="#334759" stroke-width="2"/>';
+ }else if(rescue){
+  equipment='<rect x="11" y="31" width="42" height="46" rx="2" fill="#cfd7dc" stroke="#7c8e99"/><g stroke="#718594" stroke-width="2"><path d="M11 42h42M11 53h42M11 64h42M24 31v46M39 31v46"/></g><rect x="24" y="53" width="15" height="11" rx="1" fill="#596c7a"/>';
+ }else if(tanker){
+  equipment='<rect x="12" y="33" width="40" height="43" rx="6" fill="#e5e9e9" stroke="#64798b" stroke-width="2"/><rect x="20" y="37" width="24" height="33" rx="5" fill="#a6b8c3" stroke="#607584"/><path d="M32 37v33" stroke="#f4f5f4" stroke-width="3"/>';
+ }else if(truck){
+  equipment='<rect x="12" y="33" width="40" height="45" rx="2" fill="#e9edf0" stroke="#8d9aa3"/><g stroke="#657b8d" stroke-width="2"><path d="M12 45h40M12 57h40M12 69h40M25 33v45M39 33v45"/></g><rect x="27" y="58" width="10" height="10" rx="2" fill="#657b8d"/>';
+ }else equipment='<rect x="13" y="37" width="38" height="35" rx="4" fill="#e6e9eb" stroke="#788a97"/><rect x="19" y="44" width="26" height="18" rx="2" fill="#aec8d8"/><path d="M19 56h26" stroke="#fff" stroke-width="2"/>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+Math.round(width*1.34)+'" viewBox="0 0 64 88" fill="none" aria-label="Fahrzeug '+label+'">'+
+ '<ellipse cx="32" cy="80" rx="26" ry="5" fill="#051a2d" opacity=".18"/>'+
+ '<rect x="5" y="15" width="54" height="66" rx="9" fill="'+side+'" stroke="#73131c" stroke-width="2"/>'+
+ '<rect x="9" y="17" width="46" height="61" rx="6" fill="'+background+'" stroke="#f7b0ad" stroke-width="1.5"/>'+
+ '<rect x="11" y="19" width="42" height="13" rx="3" fill="#243d53"/><path d="M31 19v13" stroke="#7a95a9"/>'+
+ '<rect x="12" y="17" width="13" height="3" rx="1" fill="#2473cb"/><rect x="39" y="17" width="13" height="3" rx="1" fill="#2473cb"/>'+
+ equipment+
+ '<rect x="7" y="79" width="50" height="6" rx="2" fill="#e8e9dc" stroke="#8c9799"/>'+
+ '<text x="32" y="'+(truck?"74":"77")+'" text-anchor="middle" fill="'+(truck?"#293e4e":"#202d38")+'" font-size="10" font-weight="900">'+label+'</text></svg>';
+}
+function fireDrawing(small=false){
+ const n=small?40:52;
+ return '<svg width="'+n+'" height="'+n+'" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" aria-label="Brandstelle">'+
+ '<defs><radialGradient id="ember" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#ffe27e"/><stop offset=".5" stop-color="#fa5826"/><stop offset="1" stop-color="#b51e19" stop-opacity=".2"/></radialGradient><linearGradient id="fheat" x1="0" y1="1" x2=".4" y2="0"><stop stop-color="#f54d11"/><stop offset=".65" stop-color="#ff9f23"/><stop offset="1" stop-color="#ffe47a"/></linearGradient></defs>'+
+ '<ellipse cx="32" cy="53" rx="27" ry="8" fill="url(#ember)" opacity=".75"/>'+
+ '<path d="M32 5c4 12-4 19 2 27 4-8 9-9 6-21 15 15 21 26 13 40-5 10-18 13-31 9C5 53 8 34 18 24c-1 10 3 15 8 18C23 29 22 15 32 5Z" fill="#b9271b" stroke="#8f2119" stroke-width="1.4"/>'+
+ '<path d="M29 13c6 12-1 17 6 25 2-7 7-8 8-14 9 15 10 26-2 33-11 7-25-1-24-15 1-9 6-13 7-18 2 10-2 15 4 20 2-9 0-18 1-31Z" fill="url(#fheat)"/>'+
+ '<path d="M31 29c1 10-6 15-2 20 3-3 6-5 6-12 6 8 6 17-2 19-10 2-12-7-8-14 1 4 3 5 6-13Z" fill="#ffeeb2"/></svg>';
+}
+function icon(kind,small=false,vehicleType=""){if(kind==="fahrzeug")return vehicleDrawing(vehicleType,small);if(kind==="brand")return fireDrawing(small);const s=small?26:40,c=kind==="fahrzeug"?"#d52f37":kind==="brand"?"#ec452b":kind==="rauch"?"#71838f":kind==="gefahr"?"#e7a835":kind==="leitung"?"#efc75b":kind==="wasser"?"#338ada":"#183348";const wrap=inner=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+inner+"</svg>";
 if(kind==="fahrzeug")return wrap('<rect x="5" y="13" width="36" height="24" rx="4" fill="'+c+'" stroke="#8f1720" stroke-width="2"/><path d="M11 13v-5h15v5M32 14v20" stroke="#f3eff0" stroke-width="2"/><rect x="33" y="18" width="8" height="8" fill="#d4e8f0"/><circle cx="14" cy="38" r="4" fill="#1a2836" stroke="#fff"/><circle cx="34" cy="38" r="4" fill="#1a2836" stroke="#fff"/><rect x="8" y="25" width="19" height="3" rx="1" fill="#f5dd5a"/>');
 if(kind==="brand")return wrap('<path d="M24 5c2 11-5 12 0 19 3-5 4-8 4-11 12 11 14 29-4 30C9 43 7 28 15 19c1 8 4 6 4 0 0-6 2-10 5-14Z" fill="#e95428" stroke="#942b18" stroke-width="2"/><path d="M25 24c0 5-3 7-1 9 1-2 2-4 3-5 6 8 2 13-3 13-6 0-10-7-5-13 0 5 3 5 6-4Z" fill="#ffd75d"/>');
 if(kind==="rauch")return wrap('<path d="M6 32c-2-7 4-13 11-12 0-8 10-12 16-5 9-2 16 9 10 17-4 6-31 8-37 0Z" fill="#8896a0" stroke="#435462" stroke-width="2"/><path d="M14 23c3-7 11-9 16-4" stroke="#dae2e8" stroke-width="2" opacity=".8"/>');
@@ -139,7 +180,7 @@ const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("
 function setMapStyle(){if(!map)return;const style=st.mapStyle,key=$("#mapKey").value.trim();if(style==="osm")return map.setStyle(osm);if(!key){toast("MapTiler-Schlüssel fehlt. OpenStreetMap bleibt aktiv.",true);return}map.setStyle("https://api.maptiler.com/maps/"+(style==="satellite"?"satellite":"streets-v2")+"/style.json?key="+encodeURIComponent(key))}
 $("#mapStyle").onchange=e=>{st.mapStyle=e.target.value;st.mapStyleSelected=true;setMapStyle();persist()};$("#mapKey").onchange=e=>{localStorage.setItem("planspiel-maptiler-key",e.target.value.trim());setMapStyle();persist()};
 function renderTools(){
- const vehicles=$("#vehicleTools");if(vehicles){vehicles.innerHTML=st.vehicles.map(v=>'<button data-vehicle="'+v.id+'" class="vehicle-tool '+(tool==="vehicle:"+v.id?"selected":"")+'">'+icon("fahrzeug",true)+'<span><strong>'+safe(v.type||"Fahrzeug")+'</strong><small>'+safe(v.radio||"Kein Funkrufname")+' · '+safe(v.crew||"Stärke unbekannt")+'</small></span></button>').join("")||'<p class="helper">Fahrzeuge zuerst in Schritt 1 anlegen.</p>';$$("[data-vehicle]").forEach(b=>b.onclick=()=>{tool="vehicle:"+b.dataset.vehicle;renderTools();toast("Fahrzeug auf der Karte platzieren")})}
+ const vehicles=$("#vehicleTools");if(vehicles){vehicles.innerHTML=st.vehicles.map(v=>'<button data-vehicle="'+v.id+'" class="vehicle-tool '+(tool==="vehicle:"+v.id?"selected":"")+'">'+icon("fahrzeug",true,v.type)+'<span><strong>'+safe(v.type||"Fahrzeug")+'</strong><small>'+safe(v.radio||"Kein Funkrufname")+' · '+safe(v.crew||"Stärke unbekannt")+'</small></span></button>').join("")||'<p class="helper">Fahrzeuge zuerst in Schritt 1 anlegen.</p>';$$("[data-vehicle]").forEach(b=>b.onclick=()=>{tool="vehicle:"+b.dataset.vehicle;renderTools();toast("Fahrzeug auf der Karte platzieren")})}
  $("#toolkit").innerHTML=kinds.filter(([k])=>k!=="fahrzeug").map(([k,label])=>'<button data-tool="'+k+'" class="symbol-tool '+(tool===k?"selected":"")+'" title="'+safe(label)+'">'+icon(k,true)+'<span>'+label+'</span></button>').join("");
  $$("[data-tool]").forEach(x=>x.onclick=()=>{tool=x.dataset.tool;renderTools();toast("Auf der Karte positionieren: "+kinds.find(k=>k[0]===tool)[1])})
 }
@@ -149,12 +190,12 @@ function renderMarkers(override){
  const objects=override||reviewSnapshot?.objects||st.objects;
  for(const obj of objects){
   if(isViewer&&obj.hiddenToViewer)continue;
-  const el=document.createElement("button");el.className="map-pin";el.type="button";
-  const px=obj.type==="fahrzeug"?Math.max(32,Math.min(100,Math.round(7.5/(156543.03392*Math.cos(obj.lat*Math.PI/180)/Math.pow(2,map.getZoom()))))):30;
-  const symbol=icon(obj.type,true);
+  const el=document.createElement("button");el.className="map-pin";if(obj.type==="fahrzeug")el.classList.add("vehicle-marker");if(obj.type==="brand")el.classList.add("brand-marker");el.type="button";
+  const px=obj.type==="fahrzeug"?Math.max(34,Math.min(85,Math.round(9/(156543.03392*Math.cos(obj.lat*Math.PI/180)/Math.pow(2,map.getZoom()))))):obj.type==="brand"?46:30;
+  const symbol=icon(obj.type,true,obj.vehicleType||obj.label||"");
   el.innerHTML='<span class="pin-graphic" style="display:inline-flex;transform:rotate('+Number(obj.rotation||0)+'deg)">'+symbol+'</span>'+(obj.label?'<span>'+safe(obj.label)+'</span>':"");
   el.querySelector("svg")?.setAttribute("width",String(Math.max(26,Math.round(px*(obj.size||1)))));
-  el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)))));
+  el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)*(obj.type==="fahrzeug"?1.34:1)))));
   const effectCue=reviewSnapshot?.cue||st.activeCue;const intensity=obj.type==="brand"?Number(effectCue?.fire||0):obj.type==="rauch"?Number(effectCue?.smoke||0):0;
   if(intensity>0){el.classList.add(obj.type==="brand"?"fire-active":"smoke-active");const v=el.querySelector("svg");if(v){v.setAttribute("width",String(Math.min(95,Number(v.getAttribute("width"))*(1+intensity*.23))));v.setAttribute("height",String(Math.min(95,Number(v.getAttribute("height"))*(1+intensity*.23))))}}
   el.title=(obj.label||obj.type)+" · "+(isViewer?"Einsatzdarstellung":"bearbeiten, drehen oder entfernen");
