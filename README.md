@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.6**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.7**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -11,9 +11,9 @@ Aktueller Entwicklungsstand: **Version 6.6**. Die Anwendung ist eine Ausbildungs
 
 
 
-## Änderungen in Version 6.6
+## Änderungen in Version 6.7
 
-- **Abspielbare Nachbesprechung:** In der Planspielleitung lässt sich die Chronologie über eine Zeitleiste mit Slider, Vor/Zurück und Start/Pause durchgehen. Die gespeicherten Kartenzustände inklusive Fahrzeugpositionen, Orientierung und freigegebener Brand-/Rauchlage werden aufeinanderfolgend dargestellt. Wiedergabeschritte erfolgen momentan alle 1,2 Sekunden, nicht im realen Zeitmaßstab. Die Teilnehmeransicht bleibt während der Regie-Rückschau unverändert live.
+- **Abspielbare Nachbesprechung:** In der Planspielleitung lässt sich die Chronologie über eine Zeitleiste mit Slider, Vor/Zurück und Start/Pause durchgehen. Die gespeicherten Kartenzustände inklusive Fahrzeugpositionen, Orientierung und freigegebener Brand-/Rauchlage werden aufeinanderfolgend dargestellt. Wiedergabeschritte erfolgen momentan alle 1,2 Sekunden, nicht im realen Zeitmaßstab. Die Teilnehmeransicht bleibt während der Regie-Rückschau unverändert live. Auch die aktuelle Kartenposition der Regie wird durch das Aufrufen historischer Zustände nicht überschrieben.
 - **Sichtbare Windbedingungen:** In der Lagekarte werden Windrichtung („aus“) und Beaufort-Wert eingeblendet. Die Pfeilrichtung kennzeichnet die Windbewegung **von** der angegebenen Himmelsrichtung **weg**.
 - **Grafische Lageeffekte:** Brand- und Rauchzeichen können zusätzlich einen farbigen Ausbreitungsbereich in Windrichtung anzeigen. Dieser Bereich skaliert mit der bei einer Einspielung ausgewählten Intensität. Rein schematische Darstellung, **kein** physikalisches Feuer-, Rauch- oder Windmodell.
 - **Kartengröße der Einsatzfahrzeuge:** Eine vereinfachte Längenskala differenziert Fahrzeuggruppen nach typischen Abmessungen. Sie ist nur eine Ausbildungsvisualisierung; für konkrete Fahrzeugtypen und Hubrettungsfahrzeuge sind Herstellerdaten und eine separate Modellprüfung erforderlich.
