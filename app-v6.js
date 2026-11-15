@@ -251,7 +251,7 @@ $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")|
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
 function updateSummary(){
- const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
+ renderWind();const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
@@ -355,11 +355,62 @@ function renderMarkers(override){
   markers.push(marker)
  }
 }
+
+/* Exercise replay is local to the instructor. Never sync review frames to the viewer. */
+let replayIndex=-1,replayTimer=null;
+function replayItems(){return st.started&&Array.isArray(st.history)?st.history.filter(x=>x.type!=="Teilnehmerfreigabe"):[]}
+function stopReplay(){if(replayTimer){clearInterval(replayTimer);replayTimer=null}const b=$("#replayStart");if(b)b.textContent="▶ Abspielen"}
+function showReplayFrame(index){
+ const frames=replayItems();if(!frames.length)return;
+ replayIndex=Math.max(0,Math.min(index,frames.length-1));
+ reviewSnapshot=frames[replayIndex];
+ if(map){renderMarkers();if(Array.isArray(reviewSnapshot.center))map.jumpTo({center:reviewSnapshot.center,zoom:reviewSnapshot.zoom??st.mapZoom})}
+ $("#returnLive").hidden=false;updateReplayUI();
+}
+function updateReplayUI(){
+ if(isViewer)return;
+ const frames=replayItems(),len=frames.length,range=$("#replaySlider");
+ if(!range)return;
+ range.max=String(Math.max(0,len-1));range.disabled=len<1;
+ range.value=String(Math.max(0,Math.min(replayIndex<0?len-1:replayIndex,len-1)));
+ $("#replayStart").disabled=len<2;$("#replayPrev").disabled=len<1;$("#replayNext").disabled=len<1;
+ $("#replayLive").disabled=!reviewSnapshot;
+ $("#replayStatus").textContent=len?(reviewSnapshot?"Rückschau · Zustand "+(replayIndex+1)+" von "+len:len+" Lagezustände gespeichert"):"Noch kein Übungsdurchlauf aufgezeichnet";
+ $("#replayPosition").textContent=reviewSnapshot?.time||frames.at(-1)?.time||"00:00:00";
+}
+function restoreLiveMap(){
+ stopReplay();reviewSnapshot=null;replayIndex=-1;
+ if(map){map.jumpTo({center:st.mapCenter,zoom:st.mapZoom});renderMarkers()}
+ $("#returnLive").hidden=true;updateReplayUI();
+}
+$("#replaySlider").oninput=e=>{stopReplay();showReplayFrame(+e.target.value)};
+$("#replayPrev").onclick=()=>{stopReplay();showReplayFrame(Math.max(0,replayIndex-1))};
+$("#replayNext").onclick=()=>{stopReplay();showReplayFrame(replayIndex<0?0:replayIndex+1)};
+$("#replayLive").onclick=restoreLiveMap;
+$("#replayStart").onclick=()=>{
+ const frames=replayItems();if(frames.length<2)return;
+ if(replayTimer){stopReplay();return}
+ if(replayIndex<0||replayIndex>=frames.length-1)showReplayFrame(0);
+ $("#replayStart").textContent="Ⅱ Pause";
+ replayTimer=setInterval(()=>{
+  if(replayIndex>=replayItems().length-1){stopReplay();return}
+  showReplayFrame(replayIndex+1)
+ },1200)
+};
+const windDegrees={N:0,NO:45,O:90,SO:135,S:180,SW:225,W:270,NW:315};
+function windToDegrees(dir){return (windDegrees[dir]??0)+180}
+function renderWind(){
+ const dir=st.windDir||"",strength=st.windSpeed;
+ const a=$("#windArrow");if(a)a.style.transform="rotate("+windToDegrees(dir)+"deg)";
+ $("#windMapDirection").textContent=dir?"Wind aus "+dir:"Windrichtung nicht festgelegt";
+ $("#windMapSpeed").textContent=strength!==""&&strength!=null?strength+" Bft":"Windstärke nicht festgelegt";
+}
+
 function renderHistory(){
  const host=$("#historyItems");if(!host||isViewer)return;
  const items=st.started&&Array.isArray(st.history)?st.history.filter(x=>x.type!=="Teilnehmerfreigabe"):[];
  host.innerHTML=items.length?[...items].reverse().map(x=>'<div class="history-line"><time>'+safe(x.time)+'</time><strong>'+safe(x.type)+'</strong><div>'+safe(x.detail)+'</div><button data-review="'+safe(x.id)+'">Lagezustand anzeigen</button></div>').join(""):'<p class="helper">'+(st.started?'Noch keine dokumentierten Lageänderungen.':'Die Dokumentation beginnt mit dem Start des Übungsdurchlaufs.')+'</p>';
- host.querySelectorAll("[data-review]").forEach(btn=>btn.onclick=()=>{reviewSnapshot=items.find(x=>x.id===btn.dataset.review);if(reviewSnapshot){renderMarkers();$("#returnLive").hidden=false;toast("Historischer Lagezustand angezeigt – Teilnehmeransicht unverändert.")}});
+ host.querySelectorAll("[data-review]").forEach(btn=>btn.onclick=()=>{const index=items.findIndex(x=>x.id===btn.dataset.review);if(index>=0){stopReplay();showReplayFrame(index);toast("Historischer Lagezustand nur in der Regie angezeigt.")}});updateReplayUI();
 }
 function renderRadioMessages(){
  const out=$("#radioList");if(!out||isViewer)return;
@@ -418,7 +469,7 @@ $("#saveBtn").onclick=()=>{storeForm();toast("Szenario im Browser gespeichert")}
 $("#exportBtn").onclick=()=>{storeForm();const b=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="taktikplatte-szenario.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...migrateScenarioWind(j),step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
 function newExercise(){
- if(timer){clearInterval(timer);timer=null}
+ if(timer){clearInterval(timer);timer=null}stopReplay();
  st=initial();photos=[];photoIndex=0;tool="";reviewSnapshot=null;
  $("#timeCounter").textContent="00:00:00";$("#startClock").textContent="Start";
  $("#exerciseEnded").hidden=true;$("#participantEnded").hidden=true;
@@ -431,7 +482,7 @@ $("#startClock").onclick=()=>{
  if(st.ended)return;
  if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";persist();return}
  if(!st.started){
-  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];renderRadioMessages();
+  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
   $("#timeCounter").textContent=stamp();
   log("Übungsstart","Übungsdurchlauf durch die Planspielleitung gestartet");
  }
@@ -458,7 +509,7 @@ function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.to
 $$("[data-director-tab]").forEach(b=>b.onclick=()=>showDirectorTab(b.dataset.directorTab));
 $("#directorAddCue").onclick=()=>go(2);
 $("#logCommand").onclick=()=>{if(!st.started||st.ended)return toast("Dokumentation ist nur während des gestarteten Übungsdurchlaufs möglich.",true);const n=$("#commandNote").value.trim();if(!n)return toast("Bitte eine Notiz eingeben",true);log("Befehl / Entscheidung",n);$("#commandNote").value="";persist();toast("In der Chronologie dokumentiert")};
-$("#returnLive").onclick=()=>{reviewSnapshot=null;renderMarkers();$("#returnLive").hidden=true;toast("Aktueller Lagezustand wiederhergestellt")};
+$("#returnLive").onclick=()=>{restoreLiveMap();toast("Aktuelle Lage wiederhergestellt")};
 $("#exportProtocol").onclick=()=>$("#printBtn").click();
 $("#showViewerFront").checked=st.releaseFront!==false;
 $("#showViewerMap").checked=st.releaseMap!==false;
