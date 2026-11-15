@@ -332,13 +332,30 @@ function renderMarkers(override){
  for(const obj of objects){
   if(isViewer&&obj.hiddenToViewer)continue;
   const el=document.createElement("button");el.className="map-pin";if(obj.type==="fahrzeug")el.classList.add("vehicle-marker");if(obj.type==="brand")el.classList.add("brand-marker");el.type="button";
-  const px=obj.type==="fahrzeug"?Math.max(34,Math.min(85,Math.round(9/(156543.03392*Math.cos(obj.lat*Math.PI/180)/Math.pow(2,map.getZoom()))))):obj.type==="brand"?46:30;
+  const vehicleLength=/DLK|DLA|TM|TLF 4000|GRTW/.test(String(obj.vehicleType||""))?10:/MTF|MTW|KdoW|NEF/.test(String(obj.vehicleType||""))?5.5:/RTW|KTW/.test(String(obj.vehicleType||""))?7:8.2;
+  const metersPerPixel=156543.03392*Math.cos(obj.lat*Math.PI/180)/Math.pow(2,map.getZoom());
+  const px=obj.type==="fahrzeug"?Math.max(30,Math.min(96,Math.round(vehicleLength/metersPerPixel))):obj.type==="brand"?46:30;
   const symbol=obj.type==="fahrzeug"?tacticalVehicleSvg(obj.vehicleType||obj.label||"FW",obj.org||"fw",true):tacticalSceneSvg(obj.type,obj.label||obj.type,true);
   el.innerHTML='<span class="pin-graphic" style="display:inline-flex;transform:rotate('+Number(obj.rotation||0)+'deg)">'+symbol+'</span>'+(obj.label?'<span>'+safe(obj.label)+'</span>':"");
   el.querySelector("svg")?.setAttribute("width",String(Math.max(26,Math.round(px*(obj.size||1)))));
   el.querySelector("svg")?.setAttribute("height",String(Math.max(26,Math.round(px*(obj.size||1)*(obj.type==="fahrzeug"?.85:1)))));
   const effectCue=reviewSnapshot?.cue||st.activeCue;const intensity=obj.type==="brand"?Number(effectCue?.fire||0):obj.type==="rauch"?Number(effectCue?.smoke||0):0;
-  if(intensity>0){el.classList.add(obj.type==="brand"?"fire-active":"smoke-active");const v=el.querySelector("svg");if(v){v.setAttribute("width",String(Math.min(95,Number(v.getAttribute("width"))*(1+intensity*.23))));v.setAttribute("height",String(Math.min(95,Number(v.getAttribute("height"))*(1+intensity*.23))))}}
+  if(intensity>0){
+   el.classList.add(obj.type==="brand"?"fire-active":"smoke-active");
+   if(obj.type==="brand")el.classList.add("affected-fire");
+   if(obj.type==="rauch")el.classList.add("affected-smoke");
+   const v=el.querySelector("svg");
+   if(v){v.setAttribute("width",String(Math.min(95,Number(v.getAttribute("width"))*(1+intensity*.23))));v.setAttribute("height",String(Math.min(95,Number(v.getAttribute("height"))*(1+intensity*.23))))}
+   if(obj.type==="brand"||obj.type==="rauch"){
+    const plume=document.createElement("span");
+    plume.className="effect-fume";
+    plume.style.width=(35+intensity*26)+"px";
+    plume.style.height=(18+intensity*11)+"px";
+    plume.style.transform="rotate("+windToDegrees(st.windDir)+"deg)";
+    plume.style.background=obj.type==="rauch"?"linear-gradient(90deg,#5d6974b3,#8797a768,transparent)":"linear-gradient(90deg,#ed622980,#ef933433,transparent)";
+    el.appendChild(plume);
+   }
+  }
   el.title=(obj.label||obj.type)+" · "+(isViewer?"Einsatzdarstellung":"bearbeiten, drehen oder entfernen");
   const marker=new maplibregl.Marker({element:el,draggable:!isViewer&&!reviewSnapshot,anchor:"center"}).setLngLat([obj.lon,obj.lat]).addTo(map);
   if(!isViewer&&!reviewSnapshot&&!st.ended){
