@@ -442,7 +442,7 @@ function normalizeWildfire(f){
  if(!f)return null;
  // Migrate earlier scenario saves with excessive 30x–300x default.
  if(!Number.isFinite(Number(f.speedFactor))||Number(f.speedFactor)>5||Number(f.speedFactor)<=0)f.speedFactor=1;
- if(!Number.isFinite(Number(f.moisturePct)))f.moisturePct=12;
+ if(!Number.isFinite(Number(f.moisturePct)))f.moisturePct=8;
  if(!Number.isFinite(Number(f.midflameWind)))f.midflameWind=.3;
  if(!Number.isFinite(Number(f.slopeDegrees)))f.slopeDegrees=0;
  return f;
@@ -570,7 +570,7 @@ function renderWildfireUI(){
  const fire=selectedWildfire(),locked=!fire||st.ended;if(fire)normalizeWildfire(fire);
  for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfUpdateWind").disabled=locked;$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
  $("#wfFollowClock").disabled=locked;
- $("#wfFollowClock").checked=!!fire?.auto;if($("#wfSpeed")){$("#wfSpeed").value=String(fire?.speedFactor||1);$("#wfSpeed").disabled=locked;}for(const [id,key,def] of [["wfMoisture","moisturePct",12],["wfMidflame","midflameWind",.3],["wfSlope","slopeDegrees",0]]){const x=$("#"+id);if(x){x.disabled=locked;x.value=String(fire?.[key]??def)}}$("#wfStop").dataset.stopped=String(fire?.status==="stopped");
+ $("#wfFollowClock").checked=!!fire?.auto;if($("#wfSpeed")){$("#wfSpeed").value=String(fire?.speedFactor||1);$("#wfSpeed").disabled=locked;}for(const [id,key,def] of [["wfMoisture","moisturePct",8],["wfMidflame","midflameWind",.3],["wfSlope","slopeDegrees",0]]){const x=$("#"+id);if(x){x.disabled=locked;x.value=String(fire?.[key]??def)}}$("#wfStop").dataset.stopped=String(fire?.status==="stopped");
  if(fire){
   const geo=wildfireArea(fire),area=Math.PI*(geo.front+geo.back)/2*geo.flank/10000;
   $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+Number(fire.minutes||0).toFixed(2).replace(".",",")+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Rücken ca. "+Math.round(geo.back)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Tempo ca. "+geo.speed.toFixed(1).replace(".",",")+" m/Übungsminute · Wind aus "+(fire.windFrom||"N")+" ("+fire.windBft+" Bft) · Modellwerte (nicht für Einsatztaktik geeignet)";
