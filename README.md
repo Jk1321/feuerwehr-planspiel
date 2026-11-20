@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.9**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 7.6**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,14 @@ Aktueller Entwicklungsstand: **Version 6.9**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Mehrere Einsatzbilder für den Fahrzeugführer – Version 7.6
+
+- **Schritt 2 / Zusätzliche Einsatzbilder:** Mehrere JPEG-, PNG- oder WebP-Dateien gemeinsam hochladen, z. B. Anfahrt, Eintreffen am Einsatzort, Frontal- und Rückansicht, Innenansicht. Bilder lassen sich nachträglich benennen und entfernen.
+- **Freigabe durch die Übungsleitung:** Jede Zusatzansicht ist anfangs verborgen. In der Regiezentrale kann sie einzeln freigegeben/gesperrt und mit **„Anzeigen“** als aktuelle Teilnehmeransicht ausgewählt werden.
+- **Teilnehmeransicht:** Der Fahrzeugführer sieht ausschließlich freigegebene Aufnahmen und kann über kompakte Vorschaubilder zwischen diesen und der freigegebenen Ausgangsansicht wechseln. Nicht freigegebene Zusatzbilder werden nicht über BroadcastChannel an die Teilnehmeransicht übertragen.
+- **Lokale Datenspeicherung:** Die Dateien werden im Browser verkleinert, als JPEG gespeichert und im Szenario-JSON mitgeführt. Maximal zehn zusätzliche Bilder mit Größenbegrenzung durch den üblichen Browser-Speicher (ca. 4,4 MB Gesamtszenario, abhängig von Browser). **Vor einem Browserdaten-Löschen Szenario exportieren.**
+- **Einschränkung:** Die aktuelle Live-Synchronisierung funktioniert ausschließlich in Tabs desselben Browsers bzw. derselben Browserumgebung, nicht zwischen fremden Geräten über das Internet. Bei sehr vielen Bildern kann der verfügbare Browser-Speicher begrenzen.
 
 ## Vegetationsbrand-Modul – Version 6.9
 
