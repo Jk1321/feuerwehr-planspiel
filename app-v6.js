@@ -296,7 +296,7 @@ function signalCueFlash(){
 const osm={version:8,sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"osm",type:"raster",source:"osm"}]};
 function setupMap(){if(map){map.resize();renderMarkers();ensureWildfireLayers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
 map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers();renderHydrants();ensureWildfireLayers()});map.on("style.load",()=>{renderMarkers();renderHydrants();ensureWildfireLayers()});map.on("moveend",()=>{if(isViewer||reviewSnapshot)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
-map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;if(tool==="wildfire"){const fire={id:uid(),label:$("#wfName").value.trim()||"Flächenbrand",fuel:$("#wfFuel").value,lat:e.lngLat.lat,lon:e.lngLat.lng,windFrom:st.windDir||"N",windBft:st.windSpeed||0,minutes:0,lastClockMinute:Math.floor(st.clock/60),status:"active",auto:false};if(!Array.isArray(st.wildfires))st.wildfires=[];st.wildfires.push(fire);tool="";$("#map").classList.remove("wildfire-pick-mode");log("Flächenbrand","Brandausbruch festgelegt: "+fire.label);renderWildfireUI();ensureWildfireLayers();persist();toast("Brandherd gesetzt.");return}const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const catalog=tool==="catalog"?catalogSelection():null;const type=selected||catalog?.kind==="fahrzeug"?"fahrzeug":catalog?.kind||tool;const org=selected?.org||catalog?.org||"fw";const vehicleType=selected?.type||catalog?.type||"";const radio=selected?.radio||((catalog?.kind==="fahrzeug")?$("#tacticCallsign").value.trim():"");const crew=selected?.crew||((catalog?.kind==="fahrzeug")?$("#tacticCrew").value.trim():"");const label=selected||catalog?(vehicleType+(radio?" · "+radio:"")):"";st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,org,vehicleType,radio,crew,size:1,rotation:0,label:label||catalog?.type||""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
+map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;if(tool==="wildfire"){const fire={id:uid(),label:$("#wfName").value.trim()||"Flächenbrand",fuel:$("#wfFuel").value,lat:e.lngLat.lat,lon:e.lngLat.lng,windFrom:st.windDir||"N",windBft:st.windSpeed||0,minutes:0,lastClockSecond:currentSeconds(),lastLoggedMinute:0,status:"active",auto:true,speedFactor:Number($("#wfSpeed")?.value)||10};if(!Array.isArray(st.wildfires))st.wildfires=[];st.wildfires.push(fire);tool="";$("#map").classList.remove("wildfire-pick-mode");log("Flächenbrand","Brandausbruch festgelegt: "+fire.label);renderWildfireUI();ensureWildfireLayers();persist();toast("Brandherd gesetzt.");return}const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const catalog=tool==="catalog"?catalogSelection():null;const type=selected||catalog?.kind==="fahrzeug"?"fahrzeug":catalog?.kind||tool;const org=selected?.org||catalog?.org||"fw";const vehicleType=selected?.type||catalog?.type||"";const radio=selected?.radio||((catalog?.kind==="fahrzeug")?$("#tacticCallsign").value.trim():"");const crew=selected?.crew||((catalog?.kind==="fahrzeug")?$("#tacticCrew").value.trim():"");const label=selected||catalog?(vehicleType+(radio?" · "+radio:"")):"";st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,org,vehicleType,radio,crew,size:1,rotation:0,label:label||catalog?.type||""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
 const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("taktikplatte-maptiler-key")||"";if(key){$("#mapKey").value=key;if(st.mapStyle==="osm"&&!st.mapStyleSelected)st.mapStyle="satellite"}$("#mapStyle").value=st.mapStyle;$("#hydrantToggle").classList.toggle("active",Boolean(st.hydrantsVisible));setMapStyle();requestAnimationFrame(()=>map.resize())}
 function setMapStyle(){if(!map)return;const style=st.mapStyle,key=$("#mapKey").value.trim();if(style==="osm")return map.setStyle(osm);if(!key){toast("MapTiler-Schlüssel fehlt. OpenStreetMap bleibt aktiv.",true);return}map.setStyle("https://api.maptiler.com/maps/"+(style==="satellite"?"satellite":"streets-v2")+"/style.json?key="+encodeURIComponent(key))}
 $("#mapStyle").onchange=e=>{st.mapStyle=e.target.value;st.mapStyleSelected=true;setMapStyle();persist()};$("#mapKey").onchange=e=>{localStorage.setItem("planspiel-maptiler-key",e.target.value.trim());setMapStyle();persist()};
@@ -401,7 +401,7 @@ function renderWildfireUI(){
  const fire=selectedWildfire(),locked=!fire||st.ended;
  for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfUpdateWind").disabled=locked;$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
  $("#wfFollowClock").disabled=locked;
- $("#wfFollowClock").checked=!!fire?.auto;
+ $("#wfFollowClock").checked=!!fire?.auto;if($("#wfSpeed")){$("#wfSpeed").value=String(fire?.speedFactor||10);$("#wfSpeed").disabled=locked;}
  if(fire){
   const geo=wildfireArea(fire),area=Math.PI*(geo.front+geo.back)/2*geo.flank/10000;
   $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+(fire.minutes||0)+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Rücken ca. "+Math.round(geo.back)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Tempo ca. "+geo.speed.toFixed(1).replace(".",",")+" m/Übungsminute · Wind aus "+(fire.windFrom||"N")+" ("+fire.windBft+" Bft) · Modellwerte (nicht für Einsatztaktik geeignet)";
@@ -412,7 +412,7 @@ function updateWildfire(minutes,reason){
  if(!st.started)return toast("Bitte zuerst den Übungsdurchlauf starten.",true);
  if(st.ended||!fire||fire.status!=="active")return;
  fire.minutes=Math.min(180,(Number(fire.minutes)||0)+minutes);
- fire.lastClockMinute=Math.floor(st.clock/60);
+ fire.lastClockSecond=currentSeconds();
  log("Flächenbrand",reason+" · "+fire.label+" · "+fire.minutes+" Minuten");
  renderWildfireUI();ensureWildfireLayers();persist();
 }
@@ -427,7 +427,7 @@ if($("#wfStepFive")) $("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung"
 if($("#wfUpdateWind")) $("#wfUpdateWind").onclick=()=>{const f=selectedWildfire();if(!f||st.ended)return;f.windFrom=st.windDir||"N";f.windBft=Number(st.windSpeed)||0;log("Flächenbrand","Windbedingungen aktualisiert: "+f.windFrom+" / "+f.windBft+" Bft");renderWildfireUI();ensureWildfireLayers();persist()};
 if($("#wfStop")) $("#wfStop").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
- fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockMinute=Math.floor(st.clock/60);
+ fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockSecond=currentSeconds();
  log("Flächenbrand",(fire.status==="stopped"?"Ausbreitung angehalten: ":"Ausbreitung fortgesetzt: ")+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
@@ -437,20 +437,33 @@ if($("#wfExtinguish")) $("#wfExtinguish").onclick=()=>{
  log("Flächenbrand","Als gelöscht markiert: "+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
+if($("#wfSpeed")) $("#wfSpeed").onchange=e=>{const f=selectedWildfire();if(!f||st.ended)return;f.speedFactor=Number(e.target.value)||10;f.lastClockSecond=currentSeconds();renderWildfireUI();persist()};
 if($("#wfFollowClock")) $("#wfFollowClock").onchange=e=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
- fire.auto=e.target.checked;fire.lastClockMinute=Math.floor(st.clock/60);
+ fire.auto=e.target.checked;fire.lastClockSecond=currentSeconds();
  renderWildfireUI();persist();
 };
 function tickWildfires(){
- if(!st.started||st.ended)return;
- let changed=false;
+ if(!st.started||st.ended||!st.clockRunning)return;
+ const now=currentSeconds();let changed=false,record=false;
  for(const f of st.wildfires||[]){
   if(!f.auto||f.status!=="active")continue;
-  const now=Math.floor(st.clock/60),delta=now-(Number(f.lastClockMinute)||0);
-  if(delta>0){f.minutes=Math.min(180,(Number(f.minutes)||0)+delta);f.lastClockMinute=now;changed=true}
+  const last=Number.isFinite(Number(f.lastClockSecond))?Number(f.lastClockSecond):now;
+  const dt=Math.max(0,Math.min(4,now-last));
+  f.lastClockSecond=now;
+  if(!dt)continue;
+  f.minutes=Math.min(180,(Number(f.minutes)||0)+(dt/60)*(Number(f.speedFactor)||10));
+  changed=true;
+  const full=Math.floor(f.minutes);
+  if(full>Math.floor(Number(f.lastLoggedMinute)||0)){
+   f.lastLoggedMinute=full;record=true;
+  }
  }
- if(changed){log("Flächenbrand","Automatische Ausbreitung nach Übungszeit");renderWildfireUI();ensureWildfireLayers()}
+ if(changed){
+  ensureWildfireLayers();
+  renderWildfireUI();
+  if(record)log("Flächenbrand","Automatische Flächenausbreitung");
+ }
 }
 
 function renderMarkers(override){
@@ -632,7 +645,7 @@ $("#startClock").onclick=()=>{
  }
  if(!st.started){
   st.started=true;st.clock=0;st.clockBase=0;st.journal=[];st.history=[];st.radioMessages=[];
-  if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.lastClockMinute=0;
+  if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.lastClockSecond=0;
   stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
   log("Übungsstart","Übungsdurchlauf durch die Planspielleitung gestartet");
  }
