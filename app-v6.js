@@ -642,11 +642,12 @@ $("#showViewerMap").checked=st.releaseMap!==false;
 $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;persist()};
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;persist()};
 
-renderTools();form();renderRadioMessages();renderWildfireUI();$("#timeCounter").textContent=stamp();renderEnded();
 function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...migrateScenarioWind(j),step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
-$("#landingNew").onclick=()=>{newExercise();document.body.classList.remove("landing-mode");go(0,true);renderTools()};
+$("#landingNew").onclick=()=>{document.body.classList.remove("landing-mode");newExercise();go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
 $("#landingFile").onchange=e=>importScenario(e.target.files?.[0]);
 $("#homeBtn").onclick=()=>{storeForm();persist();document.body.classList.add("landing-mode");window.scrollTo(0,0)};
+
+try{renderTools();form();renderRadioMessages();renderWildfireUI();$("#timeCounter").textContent=stamp();renderEnded();}catch(err){console.error("TAKTIKPLATTE Initialisierung:",err);$("#timeCounter").textContent=stamp();}
 if(isViewer)viewerStart();else{document.body.classList.add("landing-mode");$("[data-step-title]").textContent=steps[st.step]}
 })();
