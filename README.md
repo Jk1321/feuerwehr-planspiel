@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 6.7**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 6.9**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,17 @@ Aktueller Entwicklungsstand: **Version 6.7**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Vegetationsbrand-Modul – Version 6.9
+
+Grundlage ist das vom Nutzer bereitgestellte DITASI-Reel „Flächenbrände – Wohin läuft das Feuer?“ (Video-39954.mp4, 1:56 Min.).
+
+- **Eigene Regie-Rubrik Flächenbrand:** Bewuchsarten Gras, Getreide, Heide und Wald; Brandausbruch auf der Lagekarte per Klick. Keine Schlauchleitungsplanung nötig.
+- **Illustrative Flächenausbreitung:** Die Software erzeugt eine polygonale Brandfläche und zeichnet den vorderen Brandkopf mit einer hellen Linie, die übrige Begrenzung orange und die verbrannte Fläche dunkel. Ausbreitungsrichtung abhängig von Windrichtung; Bewuchs und Beaufort-Wert beeinflussen die schematische Geschwindigkeit. Eine echte Vegetationsbrand-Physik oder Rothermel-Modellierung ist ausdrücklich **nicht** implementiert.
+- **Steuerung durch Planspielleitung:** Ausbreitung um eine oder fünf Übungsminuten vorantreiben, alternativ anhand der laufenden Übungsuhr je voller Minute weiterlaufen lassen. Windwerte können aus den aktuellen Übungsbedingungen neu übernommen werden. Ausbreitung anhalten/fortsetzen, Feuer als gelöscht markieren; dunkle Brandfläche bleibt sichtbar.
+- **Lagedaten:** Näherungswerte für Fläche in ha, Kopf- und Rückenausdehnung, Flankenbreite sowie schematische Geschwindigkeit in Metern pro Übungsminute.
+- **Nachbesprechung:** Jeder protokollierte Brandfortschritt wird zusammen mit Kartenelementen als Lagezustand gesichert und kann über die Regie-Zeitleiste wiedergegeben werden. Teilnehmeransicht erhält nur die Kartenvisualisierung und keine Regie-Bedienelemente.
+- **Sicherheit:** Modellwerte sind rein didaktisch frei gewählte Parameter. Sie eignen sich weder zur Abschätzung eines echten Brandverlaufs noch zur Sicherheits- oder Löschangriffsplanung. Das Modul hat keine realen Brennstoff-, Wetter- und Geländedaten und unterscheidet sich damit fundamental von validierten Fachmodellen.
 
 ## Änderungen in Version 6.7
 
