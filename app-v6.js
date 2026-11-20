@@ -274,7 +274,7 @@ function updateSummary(){
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
 function renderParticipantScene(){const p=$("#participantPhoto"),w=$("#participantPhotoEmpty");if(st.imageUrl&&(!isViewer||st.releaseFront!==false)){p.src=st.imageUrl;p.hidden=false;w.hidden=true;p.onerror=()=>{p.hidden=true;w.hidden=false}}else{p.hidden=true;w.hidden=false;w.textContent=isViewer&&st.releaseFront===false?"Frontalansicht noch nicht freigegeben":"Noch keine Straßenaufnahme ausgewählt."}
-const c=st.activeCue;const msg=String(c?.description||"").trim();$("#participantCue").textContent=msg&&msg!=="Neue Lagemeldung"?msg:(st.meldebild||"Noch kein konkreter Meldungstext hinterlegt.");$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
+const c=st.activeCue;const msg=String(c?.description||"").trim();$("#participantCue").textContent=c?(msg&&msg!=="Neue Lagemeldung"?msg:"Für diese Einspielung wurde kein konkreter Meldungstext hinterlegt."):st.meldebild||"Ausgangslage – Erkundung beginnen.";$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
 $("#participantSceneNote").textContent=st.imageCredit||"Frontalansicht des Einsatzobjekts";
 if(isViewer)refreshReleaseViews();renderEnded();renderSyncedClock();
 }
@@ -690,5 +690,11 @@ $("#landingFile").onchange=e=>importScenario(e.target.files?.[0]);
 $("#homeBtn").onclick=()=>{storeForm();persist();document.body.classList.add("landing-mode");window.scrollTo(0,0)};
 
 try{renderTools();form();renderRadioMessages();renderWildfireUI();renderSyncedClock();renderEnded();}catch(err){console.error("TAKTIKPLATTE Initialisierung:",err);$("#timeCounter").textContent=stamp();}
-if(isViewer)viewerStart();else{document.body.classList.add("landing-mode");$("[data-step-title]").textContent=steps[st.step]}
+if(isViewer)viewerStart();else{
+ document.body.classList.add("landing-mode");$("[data-step-title]").textContent=steps[st.step];
+ if(st.clockRunning&&!st.ended){
+  timer=setInterval(()=>{st.clock=currentSeconds();renderSyncedClock();tickWildfires();persist()},1000);
+  $("#startClock").textContent="Pause";renderSyncedClock();
+ }
+}
 })();
