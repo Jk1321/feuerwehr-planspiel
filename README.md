@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 7.6**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 7.8**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,15 @@ Aktueller Entwicklungsstand: **Version 7.6**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Änderungen in Version 7.8
+
+- **Einsatzfahrzeuge aus Schritt 1:** Alarmierte Fahrzeuge werden bei Aufruf der Lagekarte automatisch als verschiebbare taktische Zeichen angelegt. Typ, Funkrufname und Stärke werden übernommen. Bestehende Fahrzeugpositionen bleiben bei erneutem Öffnen erhalten; Fahrzeuge werden nicht mehrfach angelegt. Nach manuellem Entfernen eines Fahrzeugzeichens erscheint es nicht automatisch erneut.
+- **Zeitgesteuerte Ereignisse:** Ereignisse mit geplanter Übungsminute werden automatisch freigegeben, sobald die laufende Übungsuhr den Zeitpunkt erreicht (Minute 1 = 60 Sekunden). Pause stoppt den Zeitablauf; bereits abgespielte Einspielungen werden nicht automatisch doppelt freigegeben. Die manuelle frühzeitige Freigabe bleibt möglich. Zurücksetzen der Uhr setzt vorbereitete Ereignisse auf „ausstehend“.
+- **Vegetationsbrand – konservativere Geschwindigkeit:** Die bisherige freie Brandkopfausbreitung und der 120-fache Standardzeitfaktor wurden durch das **Rothermel-Basismodell für eine einzige tote Brennstoffklasse** und 1× Zeitfaktor ersetzt. Vereinfachte Lehrbeispiele aus den Brennstoffmodellen 1/3/5/8; Feuchte, Midflame-Wind und Hangneigung sind einstellbar. **Kein** vollständiges Rothermel-Modell für mehrere Brennstoffklassen, kein Gelände-/Feuchte-GIS, keine Kronenbrandausbreitung, keine validierte Einsatzprognose.
+- **Stoppen/Fortsetzen:** Die Schaltfläche sichert nun den vorherigen Automatikzustand und stellt ihn beim Fortsetzen wieder her. Die verbrannte Fläche bleibt erhalten; „Als gelöscht markieren“ stoppt endgültig.
+
+Referenz für den Übungsansatz: Patricia L. Andrews (2018), *The Rothermel Surface Fire Spread Model and Associated Developments*, USDA Forest Service RMRS-GTR-371, Druckseiten 8–10. Das Programm ist ausschließlich für Planspiel-Demonstrationen vorgesehen.
 
 ## Mehrere Einsatzbilder für den Fahrzeugführer – Version 7.6
 
