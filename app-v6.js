@@ -73,9 +73,9 @@ function tacticalSceneSvg(kind,label,small=false){
  const textFill=round?"#fff":border;
  return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 52 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+safe(label||kind)+'">'+shape+(kind==="brand"?"":'<text x="26" y="'+(round?29:diamond?29:27)+'" text-anchor="middle" font-size="'+(code.length>2?10:14)+'" font-weight="900" fill="'+textFill+'">'+safe(code)+'</text>')+'</svg>';
 }
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,clockBase:0,clockRunning:false,clockAnchor:null,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],gallery:[],activeGalleryId:null,dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,clockBase:0,clockRunning:false,clockAnchor:null,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
-let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
+let lastSeenCue=st.cueSignal?.id||null,flashTimer=null,participantChosenPhoto=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
 function migrateScenarioWind(x){if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);if(Number.isFinite(kmh)){x.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length)}}x.windUnit="bft";return x}
@@ -98,7 +98,10 @@ function cueHeading(type){
 }
 
 function log(type,detail){if(type==="Teilnehmerfreigabe")return;if(isViewer||!st.started||(st.ended&&type!=="Übungsende"))return;st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,wildfires:structuredClone(st.wildfires||[]),center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}
-function persist(){try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn(e)}if(!isViewer)bc?.postMessage({kind:"sync",state:st})}
+function persist(){if(isViewer)return;
+ try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn("Bilder konnten nicht vollständig gespeichert werden",e);toast("Speicherplatz im Browser voll – bitte Bilder entfernen oder Einsatz exportieren.",true)}
+ bc?.postMessage({kind:"sync",state:{...st,gallery:(st.gallery||[]).filter(x=>x.released)}})
+}
 function toast(msg,err=false){const el=$("#toast");el.textContent=msg;el.className="toast show"+(err?" error":"");setTimeout(()=>{if(el.textContent===msg)el.className="toast"},5000)}
 const put=(id,key)=>{const el=$("#"+id);if(el)el.value=st[key]??""};
 const get=(id,key)=>{const el=$("#"+id);if(el)st[key]=el.value};
@@ -213,8 +216,53 @@ $("#applyNow").onclick=()=>{
  st.cueSignal={id:uid(),at:Date.now()};log("Spontane Lageänderung",text);
  $("#liveText").value="";renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Spontane Lageänderung freigegeben");
 };
+
+/* Photo gallery of released and unreleased viewpoints. */
+function availableGallery(){return(st.gallery||[]).filter(p=>p.released)}
+function findGalleryPhoto(id){return(st.gallery||[]).find(p=>p.id===id)}
+function renderGalleryEditor(){
+ if(isViewer)return;
+ const list=Array.isArray(st.gallery)?st.gallery:[];
+ const editor=$("#galleryEditList"),director=$("#galleryDirectorList");
+ editor.innerHTML=list.map((p,i)=>'<article class="gallery-edit-entry"><img alt="" src="'+p.dataUrl+'"><div><div class="field"><label>Ansicht '+(i+1)+' · Name</label><input data-gallery-name="'+safe(p.id)+'" value="'+safe(p.title)+'" maxlength="90"></div><div class="gallery-entry-actions"><span class="gallery-privacy '+(p.released?'released':'')+'">'+(p.released?'Freigegeben':'Nicht freigegeben')+'</span><button type="button" data-gallery-release="'+safe(p.id)+'">'+(p.released?'Sperren':'Freigeben')+'</button><button type="button" data-gallery-show="'+safe(p.id)+'">Jetzt anzeigen</button><button type="button" data-gallery-remove="'+safe(p.id)+'">Entfernen</button></div></div></article>').join("")||'<p class="helper">Noch keine zusätzlichen Bilder hochgeladen.</p>';
+ director.innerHTML=list.map(p=>'<div class="gallery-director-entry"><img src="'+p.dataUrl+'" alt=""><div class="gallery-director-details"><strong>'+safe(p.title)+'</strong><small>'+(p.released?'Freigegeben':'Vorbereitet · verborgen')+'</small></div><button type="button" data-gallery-release="'+safe(p.id)+'">'+(p.released?'Sperren':'Freigeben')+'</button><button type="button" data-gallery-show="'+safe(p.id)+'" '+(!p.released?'disabled':'')+'>Anzeigen</button></div>').join("")||'<p class="helper">Zusätzliche Ansichten können in Schritt 2 hochgeladen werden.</p>';
+ editor.querySelectorAll("[data-gallery-name]").forEach(input=>input.onchange=()=>{const p=findGalleryPhoto(input.dataset.galleryName);if(!p)return;p.title=input.value.trim()||"Zusatzansicht";renderGalleryEditor();renderParticipantScene();persist()});
+ $$("[data-gallery-release]").forEach(b=>b.onclick=()=>{const p=findGalleryPhoto(b.dataset.galleryRelease);if(!p)return;p.released=!p.released;if(!p.released&&st.activeGalleryId===p.id)st.activeGalleryId=null;renderGalleryEditor();renderParticipantScene();persist();toast(p.released?"Ansicht freigegeben":"Ansicht verborgen")});
+ $$("[data-gallery-show]").forEach(b=>b.onclick=()=>{const p=findGalleryPhoto(b.dataset.galleryShow);if(!p)return;if(!p.released)return toast("Bitte die Ansicht zuerst freigeben.",true);st.activeGalleryId=p.id;participantChosenPhoto=null;log("Fotoeinspielung",p.title);renderParticipantScene();persist();toast("Ansicht für Fahrzeugführer gewechselt")});
+ $$("[data-gallery-remove]").forEach(b=>b.onclick=()=>{const p=findGalleryPhoto(b.dataset.galleryRemove);if(!p)return;if(!confirm("Zusatzbild "+p.title+" entfernen?"))return;st.gallery=st.gallery.filter(x=>x.id!==p.id);if(st.activeGalleryId===p.id)st.activeGalleryId=null;renderGalleryEditor();renderParticipantScene();persist()});
+}
+function renderParticipantGallery(){
+ const bar=$("#participantGalleryBar"),host=$("#participantGalleryChoices");
+ const choices=[];
+ if(st.imageUrl&&(!isViewer||st.releaseFront!==false))choices.push({id:"original",title:"Ausgangsansicht",dataUrl:st.imageUrl});
+ for(const p of availableGallery())choices.push(p);
+ if(participantChosenPhoto&&!choices.some(p=>p.id===participantChosenPhoto))participantChosenPhoto=null;
+ const selected=participantChosenPhoto||((choices.some(p=>p.id===st.activeGalleryId))?st.activeGalleryId:null)||choices[0]?.id;
+ bar.hidden=!choices.length;$("#galleryAvailableCount").textContent=choices.length+" Ansichten";
+ host.innerHTML=choices.map(p=>'<button type="button" data-view-gallery="'+safe(p.id)+'" class="'+(p.id===selected?'selected':'')+'"><img src="'+p.dataUrl+'" alt=""><span>'+safe(p.title)+'</span></button>').join("");
+ host.querySelectorAll("[data-view-gallery]").forEach(b=>b.onclick=()=>{participantChosenPhoto=b.dataset.viewGallery;renderParticipantScene()});
+ return choices.find(p=>p.id===selected)||null;
+}
+$("#galleryUpload").onchange=async e=>{
+ const files=Array.from(e.target.files||[]),status=$("#galleryUploadStatus");if(!files.length)return;
+ status.textContent="Bilder werden für das Planspiel vorbereitet …";
+ let added=0;const issues=[];
+ for(const file of files){
+  if((st.gallery||[]).length>=10){issues.push("Maximal zehn zusätzliche Ansichten.");break}
+  try{
+   const dataUrl=await compressUploadedImage(file,1100,.67);
+   if(JSON.stringify(st).length+dataUrl.length>4_400_000)throw Error("Browserspeicher nahezu voll – bitte Bilder entfernen oder exportieren.");
+   st.gallery.push({id:uid(),title:file.name.replace(/\.[^.]+$/,"").slice(0,80)||"Zusatzansicht",dataUrl,released:false});
+   added++
+  }catch(err){issues.push(file.name+": "+err.message)}
+ }
+ e.target.value="";renderGalleryEditor();persist();
+ status.textContent=added+" Bild(er) vorbereitet. "+issues.join(" · ");
+ toast(issues.length?issues[0]:added+" Einsatzbilder gespeichert",!!issues.length);
+};
+
 function renderPhoto(){const img=$("#frontPhoto"),empty=$("#frontEmpty");if(st.imageUrl){img.src=st.imageUrl;img.hidden=false;empty.hidden=true;img.onerror=()=>{img.hidden=true;empty.hidden=false;empty.textContent="Bild konnte nicht geladen werden. Eine andere Aufnahme wählen.";};}else{img.hidden=true;empty.hidden=false;empty.textContent="Wähle eine Adresse und suche eine verfügbare Straßenaufnahme."}
-$("#photoCredit").textContent=st.imageCredit||"Noch keine Bildquelle ausgewählt";$("#photoAddressHint").textContent=st.address||"In Schritt 1 eine Einsatzadresse angeben.";$("#photoCount").textContent=photos.length?photoIndex+1+" / "+photos.length:"";renderParticipantScene()}
+$("#photoCredit").textContent=st.imageCredit||"Noch keine Bildquelle ausgewählt";$("#photoAddressHint").textContent=st.address||"In Schritt 1 eine Einsatzadresse angeben.";$("#photoCount").textContent=photos.length?photoIndex+1+" / "+photos.length:"";renderGalleryEditor();renderParticipantScene()}
 function renderVersions(){$("#versions").innerHTML=st.versions.map((v,i)=>'<article class="cue"><div><strong>'+safe(v.title)+'</strong><p>'+safe(v.description)+' · Bildvorlage gespeichert</p></div><button class="small" data-version="'+i+'">Als Ansicht wählen</button></article>').join("")||'<p class="helper">Noch keine Bildvarianten gespeichert.</p>';$$("[data-version]").forEach(x=>x.onclick=()=>{let v=st.versions[+x.dataset.version];st.scene=v.description;st.imageUrl=v.imageUrl;st.imageCredit=v.imageCredit;form();persist()})}
 $("#saveScene").onclick=()=>{storeForm();if(!st.imageUrl)return toast("Bitte zuerst eine Straßenaufnahme auswählen",true);const description=st.scene.trim();if(!description)return toast("Bitte eine Lagebeschreibung eingeben",true);st.versions.push({id:uid(),title:"Szenenstand "+(st.versions.length+1),description,imageUrl:st.imageUrl,imageCredit:st.imageCredit});renderVersions();persist();toast("Szenenstand als Vorlage gespeichert. Eine KI-Bildbearbeitung ist noch nicht angeschlossen.")};
 $("#generateScene").onclick=()=>toast("Die realistische KI-Bildbearbeitung ist vorbereitet, aber noch nicht mit einem Backend verbunden. Vorerst kannst du Lagebeschreibungen als Szenenstand speichern.",true);
@@ -230,19 +278,19 @@ async function showPhoto(n){if(!photos.length)return;for(let i=0;i<photos.length
 $("#photoStatus").textContent="Straßenbilder wurden gefunden, aber keines konnte geladen werden.";toast("Die gefundenen Bildlinks sind nicht abrufbar",true)}
 $("#prevPhoto").onclick=()=>showPhoto(photoIndex-1);$("#nextPhoto").onclick=()=>showPhoto(photoIndex+1);
 
-async function compressUploadedImage(file){
+async function compressUploadedImage(file,maxDim=1400,initialQuality=.77){
   if(!file.type.startsWith("image/"))throw new Error("Bitte eine Bilddatei auswählen.");
   const objectURL=URL.createObjectURL(file);
   try{
     const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error("Bildformat kann vom Browser nicht geöffnet werden."));i.src=objectURL});
-    const maxDim=1400,scale=Math.min(1,maxDim/Math.max(img.naturalWidth,img.naturalHeight));
+    const scale=Math.min(1,maxDim/Math.max(img.naturalWidth,img.naturalHeight));
     const canvas=document.createElement("canvas");
     canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
     canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
     const ctx=canvas.getContext("2d");
     if(!ctx)throw new Error("Bild konnte nicht verarbeitet werden.");
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    let quality=.77,output=canvas.toDataURL("image/jpeg",quality);
+    let quality=initialQuality,output=canvas.toDataURL("image/jpeg",quality);
     while(output.length>2_200_000&&quality>.4){quality-=.12;output=canvas.toDataURL("image/jpeg",quality)}
     if(output.length>3_000_000)throw new Error("Bild nach dem Verkleinern noch zu groß. Bitte ein kleineres Foto verwenden.");
     return output;
@@ -273,10 +321,16 @@ function updateSummary(){
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
-function renderParticipantScene(){const p=$("#participantPhoto"),w=$("#participantPhotoEmpty");if(st.imageUrl&&(!isViewer||st.releaseFront!==false)){p.src=st.imageUrl;p.hidden=false;w.hidden=true;p.onerror=()=>{p.hidden=true;w.hidden=false}}else{p.hidden=true;w.hidden=false;w.textContent=isViewer&&st.releaseFront===false?"Frontalansicht noch nicht freigegeben":"Noch keine Straßenaufnahme ausgewählt."}
-const c=st.activeCue;const msg=String(c?.description||"").trim();$("#participantCue").textContent=c?(msg&&msg!=="Neue Lagemeldung"?msg:"Für diese Einspielung wurde kein konkreter Meldungstext hinterlegt."):st.meldebild||"Ausgangslage – Erkundung beginnen.";$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
-$("#participantSceneNote").textContent=st.imageCredit||"Frontalansicht des Einsatzobjekts";
-if(isViewer)refreshReleaseViews();renderEnded();renderSyncedClock();
+function renderParticipantScene(){
+ const p=$("#participantPhoto"),w=$("#participantPhotoEmpty");
+ const selected=renderParticipantGallery();
+ if(selected?.dataUrl){if(p.getAttribute("src")!==selected.dataUrl)p.src=selected.dataUrl;p.hidden=false;w.hidden=true;p.onerror=()=>{p.hidden=true;w.hidden=false;w.textContent="Bild nicht geladen."}}
+ else{p.hidden=true;w.hidden=false;w.textContent="Noch keine Ansicht freigegeben."}
+ const c=st.activeCue,msg=String(c?.description||"").trim();
+ $("#participantCue").textContent=c?(msg&&msg!=="Neue Lagemeldung"?msg:"Für diese Einspielung fehlt ein Meldungstext."):st.meldebild||"Ausgangslage – Erkundung beginnen.";
+ $("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
+ $("#participantSceneNote").textContent=selected?.title||st.imageCredit||"Frontalansicht des Einsatzobjekts";
+ if(isViewer)refreshReleaseViews();renderEnded();renderSyncedClock();
 }
 function renderEnded(){
  const isDone=Boolean(st.ended),panel=$("#exerciseEnded");
@@ -748,7 +802,7 @@ $("#endExercise").onclick=()=>{
 };
 $("#printBtn").onclick=()=>{if(!st.started)return toast("Die Übungsdokumentation beginnt erst mit „Start“.",true);const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(bftLabel(st.windSpeed))+"</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.filter(x=>x.type!=="Teilnehmerfreigabe").map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
 function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();bc?.postMessage({kind:"request"})}
-if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();if(map){renderMarkers();renderHydrants()}}else if(!isViewer&&e.data?.kind==="request")persist()};
+if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){const next=e.data.state;if(st.activeGalleryId!==next.activeGalleryId)participantChosenPhoto=null;st={...initial(),...next,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();if(map){renderMarkers();renderHydrants()}}else if(!isViewer&&e.data?.kind==="request")persist()};
 // A participant updates its clock from the last shared anchor even between broadcast packets.
 // BroadcastChannel synchronizes separate tabs within the same browser, not remote devices.
 if(isViewer)setInterval(renderSyncedClock,250);
