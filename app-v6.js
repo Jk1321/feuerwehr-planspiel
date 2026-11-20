@@ -348,18 +348,54 @@ let reviewSnapshot=null;
 /* Vegetation fire visual model: pedagogical geometry, not physical fire forecasting. */
 const wildfireFuel={grass:{label:"Gras",speed:5.0},crop:{label:"Getreide",speed:7.0},heath:{label:"Heide",speed:4.0},forest:{label:"Wald",speed:2.0}};
 function selectedWildfire(){const id=$("#wfSelect").value;return(st.wildfires||[]).find(x=>x.id===id)||null}
+
+/* Visual wildfire artwork (custom SVG textures). Didactic illustration, NOT an operational fire model. */
+const wildfireArtwork=[
+ ["wildfire-flame","./assets/wildfire-flame.svg"],
+ ["wildfire-smoke","./assets/wildfire-smoke.svg"],
+ ["wildfire-scorch","./assets/wildfire-scorch.svg"]
+];
+const wildfireArtworkCache=new Map();
+function registerWildfireArtwork(){
+ if(!map||!map.isStyleLoaded?.())return;
+ for(const [name,url] of wildfireArtwork){
+  try{
+   if(map.hasImage?.(name))continue;
+   let img=wildfireArtworkCache.get(name);
+   if(img?.complete&&img.naturalWidth){
+    map.addImage(name,img,{pixelRatio:2});
+    continue;
+   }
+   if(img)continue;
+   img=new Image();wildfireArtworkCache.set(name,img);
+   img.onload=()=>{
+    try{
+     if(map?.isStyleLoaded?.()&&!map.hasImage(name)){
+      map.addImage(name,img,{pixelRatio:2});
+      ensureWildfireLayers();
+     }
+    }catch(e){console.warn("Waldbrandbild konnte nicht eingebunden werden:",name,e)}
+   };
+   img.onerror=()=>console.warn("Waldbrandgrafik nicht erreichbar:",url);
+   img.src=url;
+  }catch(e){console.warn("Waldbrandgrafik:",name,e)}
+ }
+}
 function wildfireArea(fire){
  const time=Math.max(0,Math.min(180,Number(fire.minutes)||0));
  const speed=(wildfireFuel[fire.fuel]?.speed||4)*(1+Math.min(12,Math.max(0,Number(fire.windBft??st.windSpeed)||0))*.17);
  const front=5+time*speed,back=4+time*speed*.16,flank=4+time*speed*.36;
  const direction=windToDegrees(fire.windFrom||st.windDir),a=direction*Math.PI/180;
  const centerShift=(front-back)/2,half=(front+back)/2;
+ const seed=Array.from(String(fire.id||"fire")).reduce((x,c)=>(x+c.charCodeAt(0))%97,0)*.081;
  const points=[];
- for(let i=0;i<=64;i++){
-  const t=2*Math.PI*i/64,along=centerShift+half*Math.cos(t),lateral=flank*Math.sin(t);
+ for(let i=0;i<=96;i++){
+  const t=2*Math.PI*i/96;
+  // Smooth, deterministic front irregularity: no random jitter on repeated renders.
+  const ripples=1+.055*Math.sin(7*t+seed)+.035*Math.sin(13*t+seed*2);
+  const along=centerShift+half*Math.cos(t)*ripples,lateral=flank*Math.sin(t)*ripples;
   const east=Math.sin(a)*along+Math.cos(a)*lateral,north=Math.cos(a)*along-Math.sin(a)*lateral;
-  const lat=fire.lat+north/111320,lon=fire.lon+east/(111320*Math.max(.1,Math.cos(fire.lat*Math.PI/180)));
-  points.push([lon,lat]);
+  points.push([fire.lon+east/(111320*Math.max(.1,Math.cos(fire.lat*Math.PI/180))),fire.lat+north/111320]);
  }
  return {coordinates:points,front,back,flank,speed};
 }
@@ -367,8 +403,9 @@ function wildfireFrontFeatures(){
  const fires=reviewSnapshot?.wildfires||st.wildfires||[];
  return {type:"FeatureCollection",features:fires.filter(f=>f.status!=="extinguished").map(f=>{
   const g=wildfireArea(f);
-  const seg=g.coordinates.slice(0,8).concat(g.coordinates.slice(-7));
-  return {type:"Feature",properties:{label:f.label||"Brandfront"},geometry:{type:"LineString",coordinates:seg}};
+  // The fire head is the downwind-facing arc of the perimeter.
+  const seg=g.coordinates.slice(0,17).concat(g.coordinates.slice(-16));
+  return {type:"Feature",properties:{label:f.label||"Brandfront",status:f.status||"active"},geometry:{type:"LineString",coordinates:seg}};
  })};
 }
 function wildfireFeatures(){
@@ -376,20 +413,51 @@ function wildfireFeatures(){
  return {type:"FeatureCollection",features:fires.filter(f=>Number.isFinite(Number(f.lat))&&Number.isFinite(Number(f.lon))).map(f=>{
   const geometry=wildfireArea(f);
   return {type:"Feature",properties:{id:f.id,label:f.label||"Flächenbrand",status:f.status||"active",fuel:f.fuel,minutes:Number(f.minutes)||0},geometry:{type:"Polygon",coordinates:[geometry.coordinates]}};
- })}
+ })};
+}
+function wildfireSpriteFeatures(){
+ const fires=reviewSnapshot?.wildfires||st.wildfires||[],features=[];
+ for(const f of fires){
+  if(f.status==="extinguished")continue;
+  const g=wildfireArea(f),points=g.coordinates,mins=Math.max(0,Number(f.minutes)||0);
+  const intensity=Math.min(1.45,.35+Math.sqrt(mins)*.19);
+  const flameIndices=[0,5,11,19,77,85,91];
+  for(let i=0;i<flameIndices.length;i++){
+   const index=flameIndices[i],point=points[index];
+   features.push({type:"Feature",properties:{sprite:"wildfire-flame",scale:intensity*(i===0?1.2:i===3||i===4?.56:.8)},geometry:{type:"Point",coordinates:point}});
+  }
+  // Smoke drifts downwind; use dispersed, overlapping image sprites.
+  const a=windToDegrees(f.windFrom||st.windDir)*Math.PI/180;
+  for(let i=0;i<6;i++){
+   const at=points[[0,4,10,86,92,96][i]],drift=(10+i*5+Math.sqrt(mins)*6);
+   const east=drift*Math.sin(a),north=drift*Math.cos(a);
+   features.push({type:"Feature",properties:{sprite:"wildfire-smoke",scale:Math.min(1.45,.43+Math.sqrt(mins)*.12)*(i%3===0?1.2:1)},geometry:{type:"Point",coordinates:[at[0]+east/(111320*Math.max(.1,Math.cos(f.lat*Math.PI/180))),at[1]+north/111320]}});
+  }
+ }
+ return {type:"FeatureCollection",features};
 }
 function ensureWildfireLayers(){
  if(!map||!map.isStyleLoaded?.())return;
  try{
+  registerWildfireArtwork();
   if(!map.getSource("planspiel-wildfire")){
    map.addSource("planspiel-wildfire",{type:"geojson",data:wildfireFeatures()});
-   map.addLayer({id:"planspiel-wildfire-fill",type:"fill",source:"planspiel-wildfire",paint:{"fill-color":["match",["get","status"],"extinguished","#54473b","stopped","#99542b","#d13c1f"],"fill-opacity":["match",["get","status"],"extinguished",.54,.35]}});
-   map.addLayer({id:"planspiel-wildfire-edge",type:"line",source:"planspiel-wildfire",paint:{"line-color":["match",["get","status"],"extinguished","#61554a","stopped","#f4ad49","#ff921c"],"line-width":["match",["get","status"],"extinguished",2,4],"line-opacity":.94}});
+   map.addLayer({id:"planspiel-wildfire-fill",type:"fill",source:"planspiel-wildfire",paint:{"fill-color":["match",["get","status"],"extinguished","#252523","stopped","#422b22","#472a22"],"fill-opacity":["match",["get","status"],"extinguished",.6,.73]}});
+   map.addLayer({id:"planspiel-wildfire-glow",type:"line",source:"planspiel-wildfire",paint:{"line-color":["match",["get","status"],"extinguished","#4b5048","stopped","#e8882b","#f24e12"],"line-width":16,"line-blur":7,"line-opacity":["match",["get","status"],"extinguished",0,.6]}});
+   map.addLayer({id:"planspiel-wildfire-edge",type:"line",source:"planspiel-wildfire",paint:{"line-color":["match",["get","status"],"extinguished","#6b6759","stopped","#e0a047","#fc6d22"],"line-width":["match",["get","status"],"extinguished",2,3],"line-opacity":.88}});
    map.addSource("planspiel-wildfire-front",{type:"geojson",data:wildfireFrontFeatures()});
-   map.addLayer({id:"planspiel-wildfire-head",type:"line",source:"planspiel-wildfire-front",paint:{"line-color":"#fff083","line-width":6,"line-opacity":.95}});
+   map.addLayer({id:"planspiel-wildfire-head-glow",type:"line",source:"planspiel-wildfire-front",paint:{"line-color":"#ff6816","line-width":17,"line-blur":7,"line-opacity":["match",["get","status"],"stopped",.13,.68]}});
+   map.addLayer({id:"planspiel-wildfire-head",type:"line",source:"planspiel-wildfire-front",paint:{"line-color":["match",["get","status"],"stopped","#f3ac55","#fff18f"],"line-width":4,"line-opacity":.97}});
+   map.addSource("planspiel-wildfire-sprites",{type:"geojson",data:wildfireSpriteFeatures()});
   }
-  map.getSource("planspiel-wildfire")?.setData(wildfireFeatures());map.getSource("planspiel-wildfire-front")?.setData(wildfireFrontFeatures());
- }catch(e){console.warn("Flächenbranddarstellung:",e)}
+  if(map.hasImage?.("wildfire-scorch")&&!map.getLayer("planspiel-wildfire-texture"))
+   map.addLayer({id:"planspiel-wildfire-texture",type:"fill",source:"planspiel-wildfire",paint:{"fill-pattern":"wildfire-scorch","fill-opacity":.54}}, "planspiel-wildfire-glow");
+  if(map.hasImage?.("wildfire-flame")&&map.hasImage?.("wildfire-smoke")&&!map.getLayer("planspiel-wildfire-artwork"))
+   map.addLayer({id:"planspiel-wildfire-artwork",type:"symbol",source:"planspiel-wildfire-sprites",layout:{"icon-image":["get","sprite"],"icon-size":["get","scale"],"icon-anchor":"center","icon-allow-overlap":true,"icon-ignore-placement":true},paint:{"icon-opacity":["match",["get","sprite"],"wildfire-smoke",.65,.94]}});
+  map.getSource("planspiel-wildfire")?.setData(wildfireFeatures());
+  map.getSource("planspiel-wildfire-front")?.setData(wildfireFrontFeatures());
+  map.getSource("planspiel-wildfire-sprites")?.setData(wildfireSpriteFeatures());
+ }catch(e){console.warn("Flächenbrandgrafik:",e)}
 }
 function renderWildfireUI(){
  if(isViewer||!$("#wfSelect"))return;
