@@ -73,14 +73,14 @@ function tacticalSceneSvg(kind,label,small=false){
  const textFill=round?"#fff":border;
  return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 52 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+safe(label||kind)+'">'+shape+(kind==="brand"?"":'<text x="26" y="'+(round?29:diamond?29:27)+'" text-anchor="middle" font-size="'+(code.length>2?10:14)+'" font-weight="900" fill="'+textFill+'">'+safe(code)+'</text>')+'</svg>';
 }
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],hydrantsVisible:false,hydrants:[]});
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
 let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
 function migrateScenarioWind(x){if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);if(Number.isFinite(kmh)){x.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length)}}x.windUnit="bft";return x}
 const stamp=()=>String(Math.floor(st.clock/3600)).padStart(2,"0")+":"+String(Math.floor(st.clock%3600/60)).padStart(2,"0")+":"+String(st.clock%60).padStart(2,"0");
-function log(type,detail){if(type==="Teilnehmerfreigabe")return;if(isViewer||!st.started||(st.ended&&type!=="Übungsende"))return;st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}
+function log(type,detail){if(type==="Teilnehmerfreigabe")return;if(isViewer||!st.started||(st.ended&&type!=="Übungsende"))return;st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,wildfires:structuredClone(st.wildfires||[]),center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}
 function persist(){try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn(e)}if(!isViewer)bc?.postMessage({kind:"sync",state:st})}
 function toast(msg,err=false){const el=$("#toast");el.textContent=msg;el.className="toast show"+(err?" error":"");setTimeout(()=>{if(el.textContent===msg)el.className="toast"},5000)}
 const put=(id,key)=>{const el=$("#"+id);if(el)el.value=st[key]??""};
@@ -326,6 +326,104 @@ function renderTools(){
 }
 renderCatalog(false);
 let reviewSnapshot=null;
+
+/* Vegetation fire visual model: pedagogical geometry, not physical fire forecasting. */
+const wildfireFuel={grass:{label:"Gras",speed:5.0},crop:{label:"Getreide",speed:7.0},heath:{label:"Heide",speed:4.0},forest:{label:"Wald",speed:2.0}};
+function selectedWildfire(){const id=$("#wfSelect").value;return(st.wildfires||[]).find(x=>x.id===id)||null}
+function wildfireArea(fire){
+ const time=Math.max(0,Math.min(180,Number(fire.minutes)||0));
+ const speed=(wildfireFuel[fire.fuel]?.speed||4)*(1+Math.min(12,Math.max(0,Number(fire.windBft??st.windSpeed)||0))*.17);
+ const front=5+time*speed,back=4+time*speed*.16,flank=4+time*speed*.36;
+ const direction=windToDegrees(fire.windFrom||st.windDir),a=direction*Math.PI/180;
+ const centerShift=(front-back)/2,half=(front+back)/2;
+ const points=[];
+ for(let i=0;i<=64;i++){
+  const t=2*Math.PI*i/64,along=centerShift+half*Math.cos(t),lateral=flank*Math.sin(t);
+  const east=Math.sin(a)*along+Math.cos(a)*lateral,north=Math.cos(a)*along-Math.sin(a)*lateral;
+  const lat=fire.lat+north/111320,lon=fire.lon+east/(111320*Math.max(.1,Math.cos(fire.lat*Math.PI/180)));
+  points.push([lon,lat]);
+ }
+ return {coordinates:points,front,back,flank,speed};
+}
+function wildfireFeatures(){
+ const fires=reviewSnapshot?.wildfires||st.wildfires||[];
+ return {type:"FeatureCollection",features:fires.filter(f=>Number.isFinite(Number(f.lat))&&Number.isFinite(Number(f.lon))).map(f=>{
+  const geometry=wildfireArea(f);
+  return {type:"Feature",properties:{id:f.id,label:f.label||"Flächenbrand",status:f.status||"active",fuel:f.fuel,minutes:Number(f.minutes)||0},geometry:{type:"Polygon",coordinates:[geometry.coordinates]}};
+ })}
+}
+function ensureWildfireLayers(){
+ if(!map||!map.isStyleLoaded?.())return;
+ try{
+  if(!map.getSource("planspiel-wildfire")){
+   map.addSource("planspiel-wildfire",{type:"geojson",data:wildfireFeatures()});
+   map.addLayer({id:"planspiel-wildfire-fill",type:"fill",source:"planspiel-wildfire",paint:{"fill-color":["match",["get","status"],"extinguished","#54473b","stopped","#99542b","#d13c1f"],"fill-opacity":["match",["get","status"],"extinguished",.54,.35]}});
+   map.addLayer({id:"planspiel-wildfire-edge",type:"line",source:"planspiel-wildfire",paint:{"line-color":["match",["get","status"],"extinguished","#61554a","stopped","#f4ad49","#ff921c"],"line-width":["match",["get","status"],"extinguished",2,4],"line-opacity":.94}});
+  }
+  map.getSource("planspiel-wildfire")?.setData(wildfireFeatures());
+ }catch(e){console.warn("Flächenbranddarstellung:",e)}
+}
+function renderWildfireUI(){
+ if(isViewer)return;
+ const select=$("#wfSelect"),saved=select.value;
+ const fires=st.wildfires||[];
+ select.innerHTML=fires.length?fires.map(f=>'<option value="'+safe(f.id)+'">'+safe(f.label||"Flächenbrand")+' · '+safe(wildfireFuel[f.fuel]?.label||f.fuel)+'</option>').join(""):'<option value="">Noch kein Brandherd</option>';
+ if(fires.some(f=>f.id===saved))select.value=saved;
+ else if(fires.length)select.value=fires[fires.length-1].id;
+ const fire=selectedWildfire(),locked=!fire||st.ended;
+ for(const id of ["wfStepOne","wfStepFive","wfStop","wfExtinguish"])$(id).disabled=locked||(fire?.status!=="active");
+ $("#wfFollowClock").disabled=locked;
+ $("#wfFollowClock").checked=!!fire?.auto;
+ if(fire){
+  const geo=wildfireArea(fire),area=Math.PI*(geo.front+geo.back)/2*geo.flank/10000;
+  $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+(fire.minutes||0)+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Modellwerte (nicht für Einsatztaktik geeignet)";
+ }else $("#wfStatus").textContent="Erst einen Bewuchs wählen und den Brandausbruch per Kartenklick setzen.";
+}
+function updateWildfire(minutes,reason){
+ const fire=selectedWildfire();
+ if(!st.started)return toast("Bitte zuerst den Übungsdurchlauf starten.",true);
+ if(st.ended||!fire||fire.status!=="active")return;
+ fire.minutes=Math.min(180,(Number(fire.minutes)||0)+minutes);
+ fire.lastClockMinute=Math.floor(st.clock/60);
+ log("Flächenbrand",reason+" · "+fire.label+" · "+fire.minutes+" Minuten");
+ renderWildfireUI();ensureWildfireLayers();persist();
+}
+$("#wfIgnite").onclick=()=>{
+ if(st.ended)return toast("Einsatz bereits beendet.",true);
+ tool="wildfire";$("#map").classList.add("wildfire-pick-mode");
+ toast("Auf der Karte auf den Brandausbruch klicken.");
+};
+$("#wfSelect").onchange=renderWildfireUI;
+$("#wfStepOne").onclick=()=>updateWildfire(1,"Ausbreitung");
+$("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung");
+$("#wfStop").onclick=()=>{
+ const fire=selectedWildfire();if(!fire||st.ended)return;
+ fire.status="stopped";fire.auto=false;
+ log("Flächenbrand","Ausbreitung angehalten: "+fire.label);
+ renderWildfireUI();ensureWildfireLayers();persist();
+};
+$("#wfExtinguish").onclick=()=>{
+ const fire=selectedWildfire();if(!fire||st.ended)return;
+ fire.status="extinguished";fire.auto=false;
+ log("Flächenbrand","Als gelöscht markiert: "+fire.label);
+ renderWildfireUI();ensureWildfireLayers();persist();
+};
+$("#wfFollowClock").onchange=e=>{
+ const fire=selectedWildfire();if(!fire||st.ended)return;
+ fire.auto=e.target.checked;fire.lastClockMinute=Math.floor(st.clock/60);
+ renderWildfireUI();persist();
+};
+function tickWildfires(){
+ if(!st.started||st.ended)return;
+ let changed=false;
+ for(const f of st.wildfires||[]){
+  if(!f.auto||f.status!=="active")continue;
+  const now=Math.floor(st.clock/60),delta=now-(Number(f.lastClockMinute)||0);
+  if(delta>0){f.minutes=Math.min(180,(Number(f.minutes)||0)+delta);f.lastClockMinute=now;changed=true}
+ }
+ if(changed){log("Flächenbrand","Automatische Ausbreitung nach Übungszeit");renderWildfireUI();ensureWildfireLayers()}
+}
+
 function renderMarkers(override){
  if(!map)return;markers.forEach(m=>m.remove());markers=[];
  const objects=override||reviewSnapshot?.objects||st.objects;
