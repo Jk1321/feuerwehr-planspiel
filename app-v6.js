@@ -615,7 +615,7 @@ $("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=a
 function newExercise(){
  if(timer){clearInterval(timer);timer=null}stopReplay();
  st=initial();photos=[];photoIndex=0;tool="";reviewSnapshot=null;$("#map").classList.remove("wildfire-pick-mode");renderWildfireUI();ensureWildfireLayers();
- $("#timeCounter").textContent="00:00:00";$("#startClock").textContent="Start";
+ $("#timeCounter").textContent="00:00:00";$("#startClock").textContent="Start";renderSyncedClock();
  $("#exerciseEnded").hidden=true;$("#participantEnded").hidden=true;
  $("#radioText").value="";
  renderEnded();renderRadioMessages();
@@ -624,29 +624,52 @@ function newExercise(){
 $("#newBtn").onclick=()=>{if(confirm("Neues Szenario beginnen? Gespeicherte Daten können überschrieben werden.")){newExercise();go(0,true);renderTools()}};
 $("#startClock").onclick=()=>{
  if(st.ended)return;
- if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";persist();return}
+ if(st.clockRunning){
+  st.clock=currentSeconds();st.clockBase=st.clock;st.clockAnchor=null;st.clockRunning=false;
+  if(timer){clearInterval(timer);timer=null}
+  $("#startClock").textContent="Fortsetzen";
+  renderSyncedClock();persist();return;
+ }
  if(!st.started){
-  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.lastClockMinute=0;stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
-  $("#timeCounter").textContent=stamp();
+  st.started=true;st.clock=0;st.clockBase=0;st.journal=[];st.history=[];st.radioMessages=[];
+  if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.lastClockMinute=0;
+  stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
   log("Übungsstart","Übungsdurchlauf durch die Planspielleitung gestartet");
  }
- let last=Date.now();
- timer=setInterval(()=>{const now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp();tickWildfires();persist()},1000);
- $("#startClock").textContent="Pause";persist()
+ st.clockBase=Number(st.clock)||0;st.clockAnchor=Date.now();st.clockRunning=true;
+ if(timer)clearInterval(timer);
+ timer=setInterval(()=>{
+  st.clock=currentSeconds();
+  renderSyncedClock();
+  tickWildfires();
+  persist();
+ },1000);
+ $("#startClock").textContent="Pause";renderSyncedClock();persist();
 };
-$("#resetClock").onclick=()=>{if(st.ended)return;st.clock=0;$("#timeCounter").textContent=stamp();persist()};
-
+$("#resetClock").onclick=()=>{
+ if(st.ended)return;
+ st.clock=0;st.clockBase=0;
+ if(st.clockRunning)st.clockAnchor=Date.now();
+ renderSyncedClock();persist();
+};
 $("#endExercise").onclick=()=>{
  if(st.ended)return;
  if(!confirm("Planspiel jetzt beenden? Die Uhr und weitere Einspielungen werden gesperrt."))return;
+ st.clock=currentSeconds();st.clockBase=st.clock;st.clockRunning=false;st.clockAnchor=null;
  if(timer){clearInterval(timer);timer=null}
- st.ended=true;st.endedAt=stamp();st.cueSignal=null;if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.auto=false;renderWildfireUI();
+ st.ended=true;st.endedAt=formatClock(st.clock);st.cueSignal=null;
+ if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.auto=false;
+ renderWildfireUI();
  log("Übungsende","Planspiel durch Übungsleitung beendet");
- renderEnded();renderParticipantScene();persist();toast("Einsatz beendet. Die Lage wurde abgeschlossen.")
+ renderEnded();renderParticipantScene();renderSyncedClock();persist();
+ toast("Einsatz beendet. Die Lage wurde abgeschlossen.");
 };
 $("#printBtn").onclick=()=>{if(!st.started)return toast("Die Übungsdokumentation beginnt erst mit „Start“.",true);const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(bftLabel(st.windSpeed))+"</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.filter(x=>x.type!=="Teilnehmerfreigabe").map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
-function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();bc?.postMessage({kind:"request"})}
-if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
+function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();bc?.postMessage({kind:"request"})}
+if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
+// A participant updates its clock from the last shared anchor even between broadcast packets.
+// BroadcastChannel synchronizes separate tabs within the same browser, not remote devices.
+if(isViewer)setInterval(renderSyncedClock,250);
 window.addEventListener("beforeunload",persist);
 
 function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory();if(id==="radio")renderRadioMessages();if(id==="wildfire")renderWildfireUI()}
@@ -666,6 +689,6 @@ $("#landingImport").onclick=()=>$("#landingFile").click();
 $("#landingFile").onchange=e=>importScenario(e.target.files?.[0]);
 $("#homeBtn").onclick=()=>{storeForm();persist();document.body.classList.add("landing-mode");window.scrollTo(0,0)};
 
-try{renderTools();form();renderRadioMessages();renderWildfireUI();$("#timeCounter").textContent=stamp();renderEnded();}catch(err){console.error("TAKTIKPLATTE Initialisierung:",err);$("#timeCounter").textContent=stamp();}
+try{renderTools();form();renderRadioMessages();renderWildfireUI();renderSyncedClock();renderEnded();}catch(err){console.error("TAKTIKPLATTE Initialisierung:",err);$("#timeCounter").textContent=stamp();}
 if(isViewer)viewerStart();else{document.body.classList.add("landing-mode");$("[data-step-title]").textContent=steps[st.step]}
 })();
