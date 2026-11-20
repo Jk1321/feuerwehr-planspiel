@@ -142,9 +142,18 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 .participant-photo img{width:100%;height:100%;object-fit:contain;object-position:center}
 .participant-photo{background:#15222b}
 @media(max-width:640px){.gallery-edit-entry{grid-template-columns:80px minmax(0,1fr)}.gallery-edit-entry img{width:80px;height:80px}}
+
+.wildfire-physics{border:1px solid #d7e5ed;background:#f7fafc;border-radius:12px;padding:13px;margin:12px 0}
+.wildfire-physics h4{font-size:13px;margin:0 0 5px;color:#20425a}
+.wildfire-physics .fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:11px 0}
+.wildfire-physics .field{min-width:0;margin:0}
+.wildfire-controls #wfStop{background:#fff6e9;color:#783b05;border:1px solid #cb9249;font-weight:750}
+.wildfire-controls #wfStop[data-stopped="true"]{background:#e8f5ef;color:#176c48;border-color:#7abf9b}
+.wildfire-controls #wfStop:disabled{opacity:.48}
+@media(max-width:600px){.wildfire-physics .fields{grid-template-columns:1fr}}
 </style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
-<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 7.6</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
+<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 7.7</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
 <div class="stepper" aria-label="Szenariovorbereitung">
 <button class="step current" data-step="0"><span class="step-num">01</span><span>Alarmierung</span></button>
@@ -216,6 +225,16 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <p class="helper">Schematische Ausbildungssimulation nach dem Konzept des DITASI-Reels: Brandausbruch setzen, Bewuchs wählen und Ausbreitung über Übungszeit und Wind steuern. Keine physikalische Brandprognose.</p>
 <div class="field"><label for="wfFuel">Bewuchs</label><select id="wfFuel"><option value="grass">Gras</option><option value="crop">Getreide</option><option value="heath">Heide</option><option value="forest">Wald</option></select></div>
 <div class="field"><label for="wfName">Bezeichnung</label><input id="wfName" value="Vegetationsbrand" placeholder="z. B. Flächenbrand südlich der Straße"></div>
+<div class="wildfire-physics">
+<h4>Berechnungsparameter · Rothermel-Basismodell</h4>
+<p class="helper">Ein-Klassen-Modell für Oberflächenfeuer nach Andrews (2018), Druckseiten 8–10. Die vorausgewählten Brennstoffdaten sind vereinfachte Lehrannahmen, keine ortsbezogenen Messwerte.</p>
+<div class="fields">
+<div class="field"><label for="wfMoisture">Feuchte des Feinbrennstoffs (%)</label><input id="wfMoisture" type="number" min="0" max="100" value="12" step="1"></div>
+<div class="field"><label for="wfMidflame">Wind in Flammenhöhe (m/s)</label><input id="wfMidflame" type="number" min="0" max="20" value="0.3" step="0.1"></div>
+<div class="field"><label for="wfSlope">Hangneigung bergauf (°)</label><input id="wfSlope" type="number" min="0" max="45" value="0" step="1"></div>
+</div>
+<p class="helper">Wind in Flammenhöhe ist **nicht** gleich Windstärke in Beaufort. Nur die Richtung wird aus der Alarmierung übernommen. Steigung wirkt hier vereinfacht in Richtung der Brandausbreitung.</p>
+</div>
 <button id="wfIgnite" class="primary" type="button">Brandausbruch auf Karte festlegen</button>
 <div class="field"><label for="wfSelect">Aktive Brandfläche</label><select id="wfSelect"><option value="">Noch keine Brandfläche angelegt</option></select></div>
 <div class="wildfire-status" id="wfStatus">Noch kein Brandherd gesetzt.</div>
@@ -226,8 +245,8 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
  <button id="wfStop" type="button">Ausbreitung stoppen</button>
  <button id="wfExtinguish" type="button">Als gelöscht markieren</button>
 </div>
-<label class="checkline"><input id="wfFollowClock" type="checkbox" checked> Brandfläche während des Übungsdurchlaufs automatisch wachsen lassen</label><div class="field"><label for="wfSpeed">Tempo der Simulation</label><select id="wfSpeed"><option value="1">1× · Echtzeit (langsam)</option><option value="30">30× · beschleunigt</option><option value="120" selected>120× · deutliche Lageentwicklung</option><option value="300">300× · schnelle Demonstration</option></select></div><p class="helper">Die Simulation wächst während die Übungsuhr läuft fließend weiter. Der Faktor beschleunigt ausschließlich die grafische Brandentwicklung, nicht die Übungsuhr.</p>
-<p class="helper">Die Ausbreitung erfolgt vereinfacht in Kopf-, Flanken- und Rückenrichtung. Die Brandfläche wird auf der Karte mit einer orangefarbenen Front und dunkler verbrannter Fläche angezeigt. Bereits vergangene Brandflächen bleiben nach dem Löschen sichtbar.</p>
+<label class="checkline"><input id="wfFollowClock" type="checkbox" checked> Brandfläche während des Übungsdurchlaufs automatisch wachsen lassen</label><div class="field"><label for="wfSpeed">Übungszeit-Faktor (keine Windgeschwindigkeit)</label><select id="wfSpeed"><option value="0.25">0,25× · gehemmt</option><option value="0.5">0,5× · verlangsamt</option><option value="1" selected>1× · Übungszeit</option><option value="2">2× · beschleunigt</option><option value="5">5× · Demonstration</option></select></div><p class="helper">Standard 1×: Eine Übungsminute entspricht einer berechneten Ausbreitungsminute. Die Berechnung ist ein vereinfachtes Oberflächenbrand-Modell, keine Einsatzprognose.</p>
+<p class="helper">Die Ausbreitungsgeschwindigkeit des Brandkopfs wird aus einer vereinfachten Rothermel-Gleichung abgeleitet. Die Flanken- und Rückenausdehnung bleibt geometrisch angenähert. Die Brandfläche wird auf der Karte mit einer orangefarbenen Front und dunkler verbrannter Fläche angezeigt. Bereits vergangene Brandflächen bleiben nach dem Löschen sichtbar.</p>
 </div>
 <div data-director-panel="radio" class="director-pane">
 <h3>Funkmeldungen an die Leitstelle</h3>
@@ -261,4 +280,4 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v6.js?v=7.6" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v6.js?v=7.7" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
