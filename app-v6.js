@@ -276,9 +276,9 @@ function signalCueFlash(){
  flashTimer=setTimeout(()=>el.classList.remove("cue-flash"),3000);
 }
 const osm={version:8,sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap"}},layers:[{id:"osm",type:"raster",source:"osm"}]};
-function setupMap(){if(map){map.resize();renderMarkers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
-map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers();renderHydrants()});map.on("style.load",()=>{renderMarkers();renderHydrants()});map.on("moveend",()=>{if(isViewer||reviewSnapshot)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
-map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const catalog=tool==="catalog"?catalogSelection():null;const type=selected||catalog?.kind==="fahrzeug"?"fahrzeug":catalog?.kind||tool;const org=selected?.org||catalog?.org||"fw";const vehicleType=selected?.type||catalog?.type||"";const radio=selected?.radio||((catalog?.kind==="fahrzeug")?$("#tacticCallsign").value.trim():"");const crew=selected?.crew||((catalog?.kind==="fahrzeug")?$("#tacticCrew").value.trim():"");const label=selected||catalog?(vehicleType+(radio?" · "+radio:"")):"";st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,org,vehicleType,radio,crew,size:1,rotation:0,label:label||catalog?.type||""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
+function setupMap(){if(map){map.resize();renderMarkers();ensureWildfireLayers();return}if(!window.maplibregl){toast("Kartenbibliothek konnte nicht geladen werden",true);return}
+map=new maplibregl.Map({container:"map",style:osm,center:st.mapCenter,zoom:st.mapZoom,attributionControl:true});map.on("error",e=>{const msg=String(e.error?.message||"");if(/401|403|forbidden|unauthorized/i.test(msg)&&st.mapStyle!=="osm"){st.mapStyle="osm";$("#mapStyle").value="osm";map.setStyle(osm);toast("MapTiler-Karte konnte nicht geladen werden. OpenStreetMap wurde aktiviert.",true)}});map.addControl(new maplibregl.NavigationControl(),"top-right");map.on("load",()=>{map.resize();renderMarkers();renderHydrants();ensureWildfireLayers()});map.on("style.load",()=>{renderMarkers();renderHydrants();ensureWildfireLayers()});map.on("moveend",()=>{if(isViewer||reviewSnapshot)return;st.mapCenter=[map.getCenter().lng,map.getCenter().lat];st.mapZoom=map.getZoom();persist()});map.on("zoomend",()=>renderMarkers());
+map.on("click",e=>{if(isViewer||st.ended||!tool||reviewSnapshot)return;if(tool==="wildfire"){const fire={id:uid(),label:$("#wfName").value.trim()||"Flächenbrand",fuel:$("#wfFuel").value,lat:e.lngLat.lat,lon:e.lngLat.lng,windFrom:st.windDir||"N",windBft:st.windSpeed||0,minutes:0,lastClockMinute:Math.floor(st.clock/60),status:"active",auto:false};if(!Array.isArray(st.wildfires))st.wildfires=[];st.wildfires.push(fire);tool="";$("#map").classList.remove("wildfire-pick-mode");log("Flächenbrand","Brandausbruch festgelegt: "+fire.label);renderWildfireUI();ensureWildfireLayers();persist();toast("Brandherd gesetzt.");return}const selected=tool.startsWith("vehicle:")?st.vehicles.find(x=>x.id===tool.slice(8)):null;const catalog=tool==="catalog"?catalogSelection():null;const type=selected||catalog?.kind==="fahrzeug"?"fahrzeug":catalog?.kind||tool;const org=selected?.org||catalog?.org||"fw";const vehicleType=selected?.type||catalog?.type||"";const radio=selected?.radio||((catalog?.kind==="fahrzeug")?$("#tacticCallsign").value.trim():"");const crew=selected?.crew||((catalog?.kind==="fahrzeug")?$("#tacticCrew").value.trim():"");const label=selected||catalog?(vehicleType+(radio?" · "+radio:"")):"";st.objects.push({id:uid(),type,lat:e.lngLat.lat,lon:e.lngLat.lng,org,vehicleType,radio,crew,size:1,rotation:0,label:label||catalog?.type||""});tool="";renderTools();renderMarkers();log("Lagekarte",type+" platziert");persist()});
 const key=localStorage.getItem("planspiel-maptiler-key")||localStorage.getItem("taktikplatte-maptiler-key")||"";if(key){$("#mapKey").value=key;if(st.mapStyle==="osm"&&!st.mapStyleSelected)st.mapStyle="satellite"}$("#mapStyle").value=st.mapStyle;$("#hydrantToggle").classList.toggle("active",Boolean(st.hydrantsVisible));setMapStyle();requestAnimationFrame(()=>map.resize())}
 function setMapStyle(){if(!map)return;const style=st.mapStyle,key=$("#mapKey").value.trim();if(style==="osm")return map.setStyle(osm);if(!key){toast("MapTiler-Schlüssel fehlt. OpenStreetMap bleibt aktiv.",true);return}map.setStyle("https://api.maptiler.com/maps/"+(style==="satellite"?"satellite":"streets-v2")+"/style.json?key="+encodeURIComponent(key))}
 $("#mapStyle").onchange=e=>{st.mapStyle=e.target.value;st.mapStyleSelected=true;setMapStyle();persist()};$("#mapKey").onchange=e=>{localStorage.setItem("planspiel-maptiler-key",e.target.value.trim());setMapStyle();persist()};
@@ -425,7 +425,7 @@ function tickWildfires(){
 }
 
 function renderMarkers(override){
- if(!map)return;markers.forEach(m=>m.remove());markers=[];
+ if(!map)return;ensureWildfireLayers();markers.forEach(m=>m.remove());markers=[];
  const objects=override||reviewSnapshot?.objects||st.objects;
  for(const obj of objects){
   if(isViewer&&obj.hiddenToViewer)continue;
@@ -585,7 +585,7 @@ $("#exportBtn").onclick=()=>{storeForm();const b=new Blob([JSON.stringify(st,nul
 $("#importBtn").onclick=()=>$("#importFile").click();$("#importFile").onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültiges Szenario");st={...initial(),...migrateScenarioWind(j),step:0};go(0,true);renderTools();toast("Szenario importiert")}catch(e){toast(e.message,true)}};
 function newExercise(){
  if(timer){clearInterval(timer);timer=null}stopReplay();
- st=initial();photos=[];photoIndex=0;tool="";reviewSnapshot=null;
+ st=initial();photos=[];photoIndex=0;tool="";reviewSnapshot=null;$("#map").classList.remove("wildfire-pick-mode");renderWildfireUI();ensureWildfireLayers();
  $("#timeCounter").textContent="00:00:00";$("#startClock").textContent="Start";
  $("#exerciseEnded").hidden=true;$("#participantEnded").hidden=true;
  $("#radioText").value="";
@@ -597,12 +597,12 @@ $("#startClock").onclick=()=>{
  if(st.ended)return;
  if(timer){clearInterval(timer);timer=null;$("#startClock").textContent="Fortsetzen";persist();return}
  if(!st.started){
-  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
+  st.started=true;st.clock=0;st.journal=[];st.history=[];st.radioMessages=[];if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.lastClockMinute=0;stopReplay();reviewSnapshot=null;replayIndex=-1;updateReplayUI();renderRadioMessages();
   $("#timeCounter").textContent=stamp();
   log("Übungsstart","Übungsdurchlauf durch die Planspielleitung gestartet");
  }
  let last=Date.now();
- timer=setInterval(()=>{const now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp();persist()},1000);
+ timer=setInterval(()=>{const now=Date.now();st.clock+=Math.max(0,Math.round((now-last)/1000));last=now;$("#timeCounter").textContent=stamp();tickWildfires();persist()},1000);
  $("#startClock").textContent="Pause";persist()
 };
 $("#resetClock").onclick=()=>{if(st.ended)return;st.clock=0;$("#timeCounter").textContent=stamp();persist()};
@@ -611,7 +611,7 @@ $("#endExercise").onclick=()=>{
  if(st.ended)return;
  if(!confirm("Planspiel jetzt beenden? Die Uhr und weitere Einspielungen werden gesperrt."))return;
  if(timer){clearInterval(timer);timer=null}
- st.ended=true;st.endedAt=stamp();st.cueSignal=null;
+ st.ended=true;st.endedAt=stamp();st.cueSignal=null;if(Array.isArray(st.wildfires))for(const f of st.wildfires)f.auto=false;renderWildfireUI();
  log("Übungsende","Planspiel durch Übungsleitung beendet");
  renderEnded();renderParticipantScene();persist();toast("Einsatz beendet. Die Lage wurde abgeschlossen.")
 };
@@ -620,7 +620,7 @@ function viewerStart(){document.body.classList.remove("landing-mode");document.b
 if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){st={...initial(),...e.data.state,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();if(map){renderMarkers();renderHydrants();if(st.mapCenter)map.jumpTo({center:st.mapCenter,zoom:st.mapZoom})}}else if(!isViewer&&e.data?.kind==="request")persist()};
 window.addEventListener("beforeunload",persist);
 
-function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory();if(id==="radio")renderRadioMessages()}
+function showDirectorTab(id){$$("[data-director-tab]").forEach(b=>b.classList.toggle("selected",b.dataset.directorTab===id));$$("[data-director-panel]").forEach(p=>p.classList.toggle("selected",p.dataset.directorPanel===id));if(id==="review")renderHistory();if(id==="radio")renderRadioMessages();if(id==="wildfire")renderWildfireUI()}
 $$("[data-director-tab]").forEach(b=>b.onclick=()=>showDirectorTab(b.dataset.directorTab));
 $("#directorAddCue").onclick=()=>go(2);
 $("#logCommand").onclick=()=>{if(!st.started||st.ended)return toast("Dokumentation ist nur während des gestarteten Übungsdurchlaufs möglich.",true);const n=$("#commandNote").value.trim();if(!n)return toast("Bitte eine Notiz eingeben",true);log("Befehl / Entscheidung",n);$("#commandNote").value="";persist();toast("In der Chronologie dokumentiert")};
@@ -631,7 +631,7 @@ $("#showViewerMap").checked=st.releaseMap!==false;
 $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;persist()};
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;persist()};
 
-renderTools();form();renderRadioMessages();$("#timeCounter").textContent=stamp();renderEnded();
+renderTools();form();renderRadioMessages();renderWildfireUI();$("#timeCounter").textContent=stamp();renderEnded();
 function importScenario(file){if(!file)return;file.text().then(t=>{const j=JSON.parse(t);if(!Array.isArray(j.objects)||!Array.isArray(j.vehicles))throw Error("Ungültige Szenario-Datei");st={...initial(),...migrateScenarioWind(j),step:0};document.body.classList.remove("landing-mode");go(0,true);renderTools();toast("Einsatz erfolgreich geladen")}).catch(e=>toast("Import fehlgeschlagen: "+e.message,true))}
 $("#landingNew").onclick=()=>{newExercise();document.body.classList.remove("landing-mode");go(0,true);renderTools()};
 $("#landingImport").onclick=()=>$("#landingFile").click();
