@@ -345,6 +345,14 @@ function wildfireArea(fire){
  }
  return {coordinates:points,front,back,flank,speed};
 }
+function wildfireFrontFeatures(){
+ const fires=reviewSnapshot?.wildfires||st.wildfires||[];
+ return {type:"FeatureCollection",features:fires.filter(f=>f.status!=="extinguished").map(f=>{
+  const g=wildfireArea(f);
+  const seg=g.coordinates.slice(0,8).concat(g.coordinates.slice(-7));
+  return {type:"Feature",properties:{label:f.label||"Brandfront"},geometry:{type:"LineString",coordinates:seg}};
+ })};
+}
 function wildfireFeatures(){
  const fires=reviewSnapshot?.wildfires||st.wildfires||[];
  return {type:"FeatureCollection",features:fires.filter(f=>Number.isFinite(Number(f.lat))&&Number.isFinite(Number(f.lon))).map(f=>{
@@ -359,8 +367,10 @@ function ensureWildfireLayers(){
    map.addSource("planspiel-wildfire",{type:"geojson",data:wildfireFeatures()});
    map.addLayer({id:"planspiel-wildfire-fill",type:"fill",source:"planspiel-wildfire",paint:{"fill-color":["match",["get","status"],"extinguished","#54473b","stopped","#99542b","#d13c1f"],"fill-opacity":["match",["get","status"],"extinguished",.54,.35]}});
    map.addLayer({id:"planspiel-wildfire-edge",type:"line",source:"planspiel-wildfire",paint:{"line-color":["match",["get","status"],"extinguished","#61554a","stopped","#f4ad49","#ff921c"],"line-width":["match",["get","status"],"extinguished",2,4],"line-opacity":.94}});
+   map.addSource("planspiel-wildfire-front",{type:"geojson",data:wildfireFrontFeatures()});
+   map.addLayer({id:"planspiel-wildfire-head",type:"line",source:"planspiel-wildfire-front",paint:{"line-color":"#fff083","line-width":6,"line-opacity":.95}});
   }
-  map.getSource("planspiel-wildfire")?.setData(wildfireFeatures());
+  map.getSource("planspiel-wildfire")?.setData(wildfireFeatures());map.getSource("planspiel-wildfire-front")?.setData(wildfireFrontFeatures());
  }catch(e){console.warn("Flächenbranddarstellung:",e)}
 }
 function renderWildfireUI(){
@@ -371,7 +381,7 @@ function renderWildfireUI(){
  if(fires.some(f=>f.id===saved))select.value=saved;
  else if(fires.length)select.value=fires[fires.length-1].id;
  const fire=selectedWildfire(),locked=!fire||st.ended;
- for(const id of ["wfStepOne","wfStepFive","wfStop","wfExtinguish"])$(id).disabled=locked||(fire?.status!=="active");
+ for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
  $("#wfFollowClock").disabled=locked;
  $("#wfFollowClock").checked=!!fire?.auto;
  if(fire){
@@ -398,8 +408,8 @@ $("#wfStepOne").onclick=()=>updateWildfire(1,"Ausbreitung");
 $("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung");
 $("#wfStop").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
- fire.status="stopped";fire.auto=false;
- log("Flächenbrand","Ausbreitung angehalten: "+fire.label);
+ fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockMinute=Math.floor(st.clock/60);
+ log("Flächenbrand",(fire.status==="stopped"?"Ausbreitung angehalten: ":"Ausbreitung fortgesetzt: ")+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
 $("#wfExtinguish").onclick=()=>{
