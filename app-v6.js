@@ -73,13 +73,30 @@ function tacticalSceneSvg(kind,label,small=false){
  const textFill=round?"#fff":border;
  return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 52 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+safe(label||kind)+'">'+shape+(kind==="brand"?"":'<text x="26" y="'+(round?29:diamond?29:27)+'" text-anchor="middle" font-size="'+(code.length>2?10:14)+'" font-weight="900" fill="'+textFill+'">'+safe(code)+'</text>')+'</svg>';
 }
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"LF 10",radio:"",crew:"0/1/8/9"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,clockBase:0,clockRunning:false,clockAnchor:null,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
 let lastSeenCue=st.cueSignal?.id||null,flashTimer=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
 function migrateScenarioWind(x){if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);if(Number.isFinite(kmh)){x.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length)}}x.windUnit="bft";return x}
-const stamp=()=>String(Math.floor(st.clock/3600)).padStart(2,"0")+":"+String(Math.floor(st.clock%3600/60)).padStart(2,"0")+":"+String(st.clock%60).padStart(2,"0");
+const formatClock=t=>{const seconds=Math.max(0,Math.floor(Number(t)||0));return String(Math.floor(seconds/3600)).padStart(2,"0")+":"+String(Math.floor(seconds%3600/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0")};
+function currentSeconds(){
+ if(st.ended||!st.clockRunning||!Number.isFinite(Number(st.clockAnchor)))return Math.max(0,Number(st.clock)||0);
+ const anchor=Number(st.clockAnchor),base=Number(st.clockBase??st.clock)||0;
+ return Math.max(0,base+Math.floor(Math.max(0,Date.now()-anchor)/1000));
+}
+const stamp=()=>formatClock(currentSeconds());
+function renderSyncedClock(){
+ const shown=st.ended?(st.endedAt||stamp()):stamp();
+ const leader=$("#timeCounter"),participant=$("#participantTime"),status=$("#participantClockStatus");
+ if(leader)leader.textContent=shown;
+ if(participant)participant.textContent=shown;
+ if(status)status.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
+}
+function cueHeading(type){
+ return {fire:"Brandentwicklung",smoke:"Rauchentwicklung",person:"Personenlage",vehicle:"Fahrzeuge / Kräfte",report:"Funkspruch",other:"Sonstige Entwicklung"}[type]||"Lagemeldung";
+}
+
 function log(type,detail){if(type==="Teilnehmerfreigabe")return;if(isViewer||!st.started||(st.ended&&type!=="Übungsende"))return;st.journal.push({time:stamp(),type,detail});if(st.journal.length>300)st.journal.shift();if(!Array.isArray(st.history))st.history=[];st.history.push({id:uid(),time:stamp(),type,detail,objects:structuredClone(st.objects),cue:st.activeCue?{...st.activeCue}:null,wildfires:structuredClone(st.wildfires||[]),center:[...st.mapCenter],zoom:st.mapZoom});if(st.history.length>90)st.history.shift();renderHistory()}
 function persist(){try{localStorage.setItem("taktikplatte-wizard-v5",JSON.stringify(st))}catch(e){console.warn(e)}if(!isViewer)bc?.postMessage({kind:"sync",state:st})}
 function toast(msg,err=false){const el=$("#toast");el.textContent=msg;el.className="toast show"+(err?" error":"");setTimeout(()=>{if(el.textContent===msg)el.className="toast"},5000)}
@@ -160,7 +177,8 @@ toggleIntensity("#liveType","#liveIntensityField","#liveIntensityLabel");
 $("#addCue").onclick=()=>{
  storeForm();
  const type=$("#cueType").value,affected=type==="fire"||type==="smoke";
- st.cues.push({id:uid(),minute:Number($("#cueMinute").value)||0,type,description:$("#cueText").value.trim()||"Neue Lagemeldung",state:"ready",...(affected?{intensity:Number($("#cueIntensity").value)}:{})});
+ if(!$("#cueText").value.trim())return toast("Bitte einen konkreten Meldungstext eingeben.",true);
+ st.cues.push({id:uid(),minute:Number($("#cueMinute").value)||0,type,description:$("#cueText").value.trim(),state:"ready",...(affected?{intensity:Number($("#cueIntensity").value)}:{})});
  $("#cueText").value="";renderCues();persist();
 };
 function renderCues(){
@@ -256,15 +274,15 @@ function updateSummary(){
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
 function renderParticipantScene(){const p=$("#participantPhoto"),w=$("#participantPhotoEmpty");if(st.imageUrl&&(!isViewer||st.releaseFront!==false)){p.src=st.imageUrl;p.hidden=false;w.hidden=true;p.onerror=()=>{p.hidden=true;w.hidden=false}}else{p.hidden=true;w.hidden=false;w.textContent=isViewer&&st.releaseFront===false?"Frontalansicht noch nicht freigegeben":"Noch keine Straßenaufnahme ausgewählt."}
-const c=st.activeCue;$("#participantCue").textContent=c?c.description:(st.meldebild||"Ausgangslage – Erkundung beginnen.");$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?"Neue Lagemeldung":"Erstes Lagebild";
+const c=st.activeCue;const msg=String(c?.description||"").trim();$("#participantCue").textContent=msg&&msg!=="Neue Lagemeldung"?msg:(st.meldebild||"Noch kein konkreter Meldungstext hinterlegt.");$("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
 $("#participantSceneNote").textContent=st.imageCredit||"Frontalansicht des Einsatzobjekts";
-if(isViewer)refreshReleaseViews();renderEnded();
+if(isViewer)refreshReleaseViews();renderEnded();renderSyncedClock();
 }
 function renderEnded(){
  const isDone=Boolean(st.ended),panel=$("#exerciseEnded");
  if(panel){panel.hidden=!isDone;$("#exerciseEndTime").textContent=isDone?"Endzeit "+(st.endedAt||stamp()):""}const participantEnd=$("#participantEnded");if(participantEnd){participantEnd.hidden=!isDone;$("#participantEndTime").textContent=isDone?"Endzeit "+(st.endedAt||stamp()):""}
  document.body.classList.toggle("exercise-finished",isDone);
- if(isDone){$("#startClock").textContent="Beendet";$("#timeCounter").textContent=st.endedAt||stamp();$("#participantSceneTitle").textContent="Einsatz beendet";}
+ if(isDone){$("#startClock").textContent="Beendet";$("#participantSceneTitle").textContent="Einsatz beendet";}renderSyncedClock();
 }
 function signalCueFlash(){
  const signal=st.cueSignal,el=$("#cueReadout");
