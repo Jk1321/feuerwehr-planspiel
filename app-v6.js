@@ -596,7 +596,10 @@ if($("#wfStepFive")) $("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung"
 if($("#wfUpdateWind")) $("#wfUpdateWind").onclick=()=>{const f=selectedWildfire();if(!f||st.ended)return;f.windFrom=st.windDir||"N";f.windBft=Number(st.windSpeed)||0;log("Flächenbrand","Windbedingungen aktualisiert: "+f.windFrom+" / "+f.windBft+" Bft");renderWildfireUI();ensureWildfireLayers();persist()};
 if($("#wfStop")) $("#wfStop").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
- fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockSecond=currentSeconds();
+ if(fire.status==="extinguished")return;
+ if(fire.status==="stopped"){fire.status="active";fire.auto=fire.autoBeforeStop!==false;toast("Ausbreitung fortgesetzt");}
+ else{fire.autoBeforeStop=fire.auto!==false;fire.status="stopped";fire.auto=false;toast("Ausbreitung gestoppt");}
+ fire.lastClockSecond=currentSeconds();
  log("Flächenbrand",(fire.status==="stopped"?"Ausbreitung angehalten: ":"Ausbreitung fortgesetzt: ")+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
