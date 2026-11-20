@@ -404,7 +404,7 @@ function wildfireFrontFeatures(){
  return {type:"FeatureCollection",features:fires.filter(f=>f.status!=="extinguished").map(f=>{
   const g=wildfireArea(f);
   // The fire head is the downwind-facing arc of the perimeter.
-  const seg=g.coordinates.slice(0,17).concat(g.coordinates.slice(-16));
+  const seg=g.coordinates.slice(-17).concat(g.coordinates.slice(1,18));
   return {type:"Feature",properties:{label:f.label||"Brandfront",status:f.status||"active"},geometry:{type:"LineString",coordinates:seg}};
  })};
 }
@@ -438,6 +438,7 @@ function wildfireSpriteFeatures(){
 }
 function ensureWildfireLayers(){
  if(!map||!map.isStyleLoaded?.())return;
+ const legend=$("#wildfireLegend");if(legend)legend.hidden=!(reviewSnapshot?.wildfires||st.wildfires||[]).length;
  try{
   registerWildfireArtwork();
   if(!map.getSource("planspiel-wildfire")){
