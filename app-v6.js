@@ -203,7 +203,7 @@ $("#addCue").onclick=()=>{
  const type=$("#cueType").value,affected=type==="fire"||type==="smoke";
  if(!$("#cueText").value.trim())return toast("Bitte einen konkreten Meldungstext eingeben.",true);
  st.cues.push({id:uid(),minute:Number($("#cueMinute").value)||0,type,description:$("#cueText").value.trim(),state:"ready",...(affected?{intensity:Number($("#cueIntensity").value)}:{})});
- $("#cueText").value="";renderCues();persist();
+ $("#cueText").value="";renderCues();triggerScheduledCues();persist();
 };
 function renderCues(){
  const list=Array.isArray(st.cues)?st.cues:[];const out=$("#cues");
@@ -220,6 +220,13 @@ function affectedCue(type,intensity,original){
  if(type==="fire")next.fire=intensity===undefined?Number(original.fire??0):Number(intensity);
  if(type==="smoke")next.smoke=intensity===undefined?Number(original.smoke??0):Number(intensity);
  return next;
+}
+function triggerScheduledCues(){
+ if(isViewer||!st.started||st.ended||!st.clockRunning||!Array.isArray(st.cues))return;
+ const elapsed=currentSeconds();
+ const due=st.cues.filter(c=>c.state!=="played"&&Number.isFinite(Number(c.minute))&&Number(c.minute)>=0&&elapsed>=Number(c.minute)*60);
+ due.sort((a,b)=>Number(a.minute)-Number(b.minute));
+ for(const c of due)playCue(c);
 }
 function playCue(c){
  if(st.ended)return toast("Der Einsatz ist beendet.",true);
@@ -849,13 +856,15 @@ $("#startClock").onclick=()=>{
   st.clock=currentSeconds();
   renderSyncedClock();
   tickWildfires();
+  triggerScheduledCues();
   persist();
  },1000);
- $("#startClock").textContent="Pause";renderSyncedClock();persist();
+ $("#startClock").textContent="Pause";renderSyncedClock();triggerScheduledCues();persist();
 };
 $("#resetClock").onclick=()=>{
  if(st.ended)return;
  st.clock=0;st.clockBase=0;
+ if(Array.isArray(st.cues)){for(const c of st.cues)c.state="ready";st.activeCue=null;renderCues();renderParticipantScene()}
  if(st.clockRunning)st.clockAnchor=Date.now();
  renderSyncedClock();persist();
 };
@@ -900,7 +909,7 @@ try{renderTools();form();renderRadioMessages();renderWildfireUI();renderSyncedCl
 if(isViewer)viewerStart();else{
  document.body.classList.add("landing-mode");$("[data-step-title]").textContent=steps[st.step];
  if(st.clockRunning&&!st.ended){
-  timer=setInterval(()=>{st.clock=currentSeconds();renderSyncedClock();tickWildfires();persist()},1000);
+  timer=setInterval(()=>{st.clock=currentSeconds();renderSyncedClock();tickWildfires();triggerScheduledCues();persist()},1000);
   $("#startClock").textContent="Pause";renderSyncedClock();
  }
 }
