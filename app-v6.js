@@ -159,8 +159,29 @@ return wrap('<path d="M24 3 45 24 24 45 3 24Z" fill="'+c+'" stroke="#dae7f0" str
 function stepText(){const step=isViewer?3:st.step;$$("[data-step]").forEach((b,i)=>{b.classList.toggle("current",i===step);b.classList.toggle("finished",i<step);b.setAttribute("aria-current",i===step?"step":"false")});$("[data-step-title]").textContent=steps[step];$("#progress").style.width=((step+1)/4*100)+"%"}
 function storeForm(){if(isViewer)return;for(const key of ["title","stichwort","meldebild","address","date","time","weather","temp","windDir","windSpeed","visibility","scene"]){const el=$('[name="'+key+'"]');if(el)st[key]=el.value}st.dynamic=$("#dynamicEnabled")?.checked??st.dynamic;persist()}
 function form(){for(const key of ["title","stichwort","meldebild","address","date","time","weather","temp","windDir","windSpeed","visibility","scene"]){const el=$('[name="'+key+'"]');if(el)el.value=st[key]??""}$("#dynamicEnabled").checked=st.dynamic;renderVehicles();renderPhoto();renderCues();renderVersions();updateSummary()}
-function go(step,skipFormSave=false){if(step<0||step>3)return;document.body.classList.remove("landing-mode");if(!skipFormSave)storeForm();st.step=step;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===step));stepText();form();if(step===3){setupMap();renderTools();requestAnimationFrame(()=>{map?.resize();setTimeout(()=>map?.resize(),180)})}window.scrollTo({top:0,behavior:"smooth"});persist()}
-function renderVehicles(){$("#vehicles").innerHTML=st.vehicles.map((v,i)=>'<div class="vehicle-line"><div class="field"><label>Fahrzeug</label><input data-v="'+v.id+'" data-field="type" value="'+safe(v.type)+'" placeholder="LF 10"></div><div class="field"><label>Funkrufname</label><input data-v="'+v.id+'" data-field="radio" value="'+safe(v.radio)+'" placeholder="2-42-1"></div><div class="field"><label>Stärke</label><input data-v="'+v.id+'" data-field="crew" value="'+safe(v.crew)+'" placeholder="0/1/8/9"></div><button class="icon-btn" title="Fahrzeug entfernen" data-del-v="'+v.id+'">×</button></div>').join("");$$("[data-v]").forEach(x=>x.onchange=()=>{const v=st.vehicles.find(v=>v.id===x.dataset.v);if(v)v[x.dataset.field]=x.value;persist()});$$("[data-del-v]").forEach(x=>x.onclick=()=>{st.vehicles=st.vehicles.filter(v=>v.id!==x.dataset.delV);renderVehicles();persist()})}
+function go(step,skipFormSave=false){if(step<0||step>3)return;document.body.classList.remove("landing-mode");if(!skipFormSave)storeForm();st.step=step;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===step));stepText();form();if(step===3){syncAlarmedVehicles();setupMap();renderTools();requestAnimationFrame(()=>{map?.resize();setTimeout(()=>map?.resize(),180)})}window.scrollTo({top:0,behavior:"smooth"});persist()}
+/* Vehicles configured in step 1 become movable initial map symbols.
+   Manual placement remains authoritative; do not relocate existing markers. */
+function syncAlarmedVehicles(){
+ if(isViewer)return;
+ if(!Array.isArray(st.objects))st.objects=[];
+ if(!Array.isArray(st.vehicleMapRemoved))st.vehicleMapRemoved=[];
+ const active=new Set((st.vehicles||[]).map(v=>v.id));
+ st.objects=st.objects.filter(o=>!o.sourceVehicleId||active.has(o.sourceVehicleId));
+ const center=Array.isArray(st.mapCenter)?st.mapCenter:[8.626,50.513];
+ for(const [i,v] of (st.vehicles||[]).entries()){
+  if(!v.type?.trim()||st.vehicleMapRemoved.includes(v.id))continue;
+  let obj=st.objects.find(o=>o.sourceVehicleId===v.id);
+  if(!obj){
+   const dx=(i%4)*.00017,dy=Math.floor(i/4)*.00013;
+   obj={id:uid(),type:"fahrzeug",sourceVehicleId:v.id,lat:center[1]-dy,lon:center[0]+dx,org:v.org||"fw",vehicleType:v.type,radio:v.radio||"",crew:v.crew||"",size:1,rotation:0};
+   st.objects.push(obj);
+  }
+  obj.vehicleType=v.type;obj.radio=v.radio||"";obj.crew=v.crew||"";obj.org=v.org||"fw";
+  obj.label=v.type+(v.radio?" · "+v.radio:"");
+ }
+}
+function renderVehicles(){$("#vehicles").innerHTML=st.vehicles.map((v,i)=>'<div class="vehicle-line"><div class="field"><label>Fahrzeug</label><input data-v="'+v.id+'" data-field="type" value="'+safe(v.type)+'" placeholder="LF 10"></div><div class="field"><label>Funkrufname</label><input data-v="'+v.id+'" data-field="radio" value="'+safe(v.radio)+'" placeholder="2-42-1"></div><div class="field"><label>Stärke</label><input data-v="'+v.id+'" data-field="crew" value="'+safe(v.crew)+'" placeholder="0/1/8/9"></div><button class="icon-btn" title="Fahrzeug entfernen" data-del-v="'+v.id+'">×</button></div>').join("");$$("[data-v]").forEach(x=>x.onchange=()=>{const v=st.vehicles.find(v=>v.id===x.dataset.v);if(v){v[x.dataset.field]=x.value;if(st.step===3){syncAlarmedVehicles();renderMarkers();}}persist()});$$("[data-del-v]").forEach(x=>x.onclick=()=>{st.vehicles=st.vehicles.filter(v=>v.id!==x.dataset.delV);syncAlarmedVehicles();renderVehicles();renderMarkers();persist()})}
 $("#addVehicle").onclick=()=>{storeForm();st.vehicles.push({id:uid(),type:"",radio:"",crew:""});renderVehicles();persist()};
 $$("[data-step]").forEach(x=>x.onclick=()=>!isViewer&&go(+x.dataset.step));
 $$("[data-next]").forEach(x=>x.onclick=()=>go(st.step+1));
@@ -678,7 +699,7 @@ function renderMarkers(override){
     popup.querySelectorAll("[data-rot]").forEach(b=>b.onclick=()=>{obj.rotation=((Number(obj.rotation)||0)+Number(b.dataset.rot)+360)%360;log("Symbol gedreht",obj.label||obj.type);p.remove();renderMarkers();persist()});
     popup.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{obj.size=Math.max(.6,Math.min(3,Number((Number(obj.size||1)+Number(b.dataset.size)).toFixed(2))));log("Symbolgröße",obj.label||obj.type);p.remove();renderMarkers();persist()});
     popup.querySelector("[data-hide]").onchange=e=>{obj.hiddenToViewer=e.target.checked;log("Sichtbarkeit",obj.label||obj.type);persist()};
-    popup.querySelector("[data-delete]").onclick=()=>{st.objects=st.objects.filter(x=>x.id!==obj.id);log("Symbol entfernt",obj.label||obj.type);p.remove();renderMarkers();persist()}
+    popup.querySelector("[data-delete]").onclick=()=>{if(obj.sourceVehicleId){st.vehicleMapRemoved=st.vehicleMapRemoved||[];if(!st.vehicleMapRemoved.includes(obj.sourceVehicleId))st.vehicleMapRemoved.push(obj.sourceVehicleId)}st.objects=st.objects.filter(x=>x.id!==obj.id);log("Symbol entfernt",obj.label||obj.type);p.remove();renderMarkers();persist()}
    };
    marker.on("dragend",()=>{const p=marker.getLngLat();obj.lon=p.lng;obj.lat=p.lat;log("Fahrzeug/Symbol verschoben",obj.label||obj.type);persist()});
   }
