@@ -72,7 +72,7 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 .tactical-details-title{font-size:13px;cursor:pointer;font-weight:700;color:#28485e;margin-bottom:10px}
 .tactical-editor details[open] .vehicle-tools{margin:12px 0}.tactical-editor details[open] .toolkit{margin:12px 0}
 .tactical-editor .vehicle-tools{grid-template-columns:1fr}.tactical-editor .vehicle-tool{min-height:58px}
-.director-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}.director-tabs button{font-size:10.5px}
+.director-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.director-tabs button{font-size:10.5px}
 .radio-entry{border-bottom:1px solid #e6edf2;padding:10px 0;display:grid;gap:4px}
 .radio-entry strong{font-size:12px;color:#19364c}.radio-entry small{font-size:11px;color:#6c8192}.radio-entry p{font-size:12px;color:#243d53;margin:0}
 @media(max-width:640px){.tactical-select-grid{grid-template-columns:1fr}.tactical-select-grid .field:last-child{grid-column:auto}}
@@ -89,9 +89,20 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 .map-pin.affected-fire,.map-pin.affected-smoke{position:relative;isolation:isolate}.map-pin.affected-fire .pin-graphic,.map-pin.affected-smoke .pin-graphic{position:relative;z-index:2}.map-pin .effect-fume{position:absolute;left:50%;bottom:50%;width:80px;height:35px;border-radius:50%;transform-origin:0 50%;pointer-events:none;background:linear-gradient(90deg,#909ba56b,transparent);filter:blur(8px);z-index:1}
 .viewer .replay-panel{display:none!important}
 @media(max-width:640px){.replay-heading{align-items:flex-start;flex-direction:column}.weather-map-badge{bottom:24px;left:7px;padding:6px}.weather-map-badge #windArrow{font-size:23px}}
+
+/* v6.8 – separate vegetation fire rehearsal module */
+.wildfire-status{padding:12px;border:1px solid #e4e8ed;background:#fafbfc;border-radius:10px;font-size:12px;line-height:1.6;color:#31495b;margin:10px 0}
+.wildfire-controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}
+.wildfire-controls button{font-size:12px;padding:9px 6px}
+.wildfire-controls button:disabled{opacity:.4;cursor:not-allowed}
+.wildfire-controls #wfStop{border-color:#d1883d}
+.wildfire-controls #wfExtinguish{background:#f1e8e6;border-color:#dfb7ab;color:#812b20}
+#map.wildfire-pick-mode{cursor:crosshair}
+.viewer [data-director-panel="wildfire"]{display:none!important}
+@media(max-width:720px){.director-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.director-tabs button{font-size:9px;padding:9px 2px}}
 </style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
-<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 6.7</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
+<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 6.8</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
 <div class="stepper" aria-label="Szenariovorbereitung">
 <button class="step current" data-step="0"><span class="step-num">01</span><span>Alarmierung</span></button>
@@ -132,7 +143,7 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div class="paper director-shell" id="directorPanel">
 <div class="director-title"><div><div class="eyebrow">Übungsleitung · Regiezentrale</div><h2>Drehbuch &amp; Lageführung</h2></div><span class="live-chip">MANUELL</span></div>
 <div class="director-clock"><div><span class="helper">Übungszeit</span><div class="clock" id="timeCounter">00:00:00</div></div><div class="director-clock-actions"><button id="startClock" class="primary">Start</button><button id="resetClock">Zurücksetzen</button><button id="endExercise" class="end-exercise" type="button">Beenden</button></div></div><div id="exerciseEnded" class="exercise-ended" hidden role="status"><strong>Einsatz beendet</strong><span id="exerciseEndTime"></span></div>
-<div class="director-tabs" role="tablist" aria-label="Regie"><button data-director-tab="script" class="selected">Drehbuch</button><button data-director-tab="instant">Live-Einspielung</button><button data-director-tab="radio">Funkverkehr</button><button data-director-tab="review">Nachbesprechung</button></div>
+<div class="director-tabs" role="tablist" aria-label="Regie"><button data-director-tab="script" class="selected">Drehbuch</button><button data-director-tab="instant">Live-Einspielung</button><button data-director-tab="wildfire">Flächenbrand</button><button data-director-tab="radio">Funkverkehr</button><button data-director-tab="review">Nachbesprechung</button></div>
 <div data-director-panel="script" class="director-pane selected">
 <p class="helper">Ereignisse bleiben vorbereitet, bis du sie einzeln freigibst. Die geplante Minute ist eine Orientierung, kein automatischer Auslöser.</p>
 <div id="cuesLive" class="secondary-list"></div>
@@ -147,6 +158,24 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div class="sectionline"></div><h3>Entscheidung / Befehl protokollieren</h3>
 <div class="field"><label>Notiz der Übungsleitung</label><textarea id="commandNote" rows="3" placeholder="z. B. Führungskraft weist LF 10 dem Zugang Ost zu"></textarea></div>
 <button id="logCommand" class="small">In Chronologie übernehmen</button>
+</div>
+
+<div data-director-panel="wildfire" class="director-pane">
+<h3>Vegetationsbrand – Lageentwicklung</h3>
+<p class="helper">Schematische Ausbildungssimulation nach dem Konzept des DITASI-Reels: Brandausbruch setzen, Bewuchs wählen und Ausbreitung über Übungszeit und Wind steuern. Keine physikalische Brandprognose.</p>
+<div class="field"><label for="wfFuel">Bewuchs</label><select id="wfFuel"><option value="grass">Gras</option><option value="crop">Getreide</option><option value="heath">Heide</option><option value="forest">Wald</option></select></div>
+<div class="field"><label for="wfName">Bezeichnung</label><input id="wfName" value="Vegetationsbrand" placeholder="z. B. Flächenbrand südlich der Straße"></div>
+<button id="wfIgnite" class="primary" type="button">Brandausbruch auf Karte festlegen</button>
+<div class="field"><label for="wfSelect">Aktive Brandfläche</label><select id="wfSelect"><option value="">Noch keine Brandfläche angelegt</option></select></div>
+<div class="wildfire-status" id="wfStatus">Noch kein Brandherd gesetzt.</div>
+<div class="wildfire-controls">
+ <button id="wfStepOne" type="button">+ 1 Übungsminute</button>
+ <button id="wfStepFive" type="button">+ 5 Übungsminuten</button>
+ <button id="wfStop" type="button">Ausbreitung stoppen</button>
+ <button id="wfExtinguish" type="button">Als gelöscht markieren</button>
+</div>
+<label class="checkline"><input id="wfFollowClock" type="checkbox"> Ausbreitung automatisch mit der Übungsuhr fortsetzen</label>
+<p class="helper">Die Ausbreitung erfolgt vereinfacht in Kopf-, Flanken- und Rückenrichtung. Die Brandfläche wird auf der Karte mit einer orangefarbenen Front und dunkler verbrannter Fläche angezeigt. Bereits vergangene Brandflächen bleiben nach dem Löschen sichtbar.</p>
 </div>
 <div data-director-panel="radio" class="director-pane">
 <h3>Funkmeldungen an die Leitstelle</h3>
@@ -174,4 +203,4 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v6.js?v=6.7" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v6.js?v=6.8" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
