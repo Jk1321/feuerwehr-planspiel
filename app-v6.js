@@ -567,13 +567,13 @@ function renderWildfireUI(){
  select.innerHTML=fires.length?fires.map(f=>'<option value="'+safe(f.id)+'">'+safe(f.label||"Flächenbrand")+' · '+safe(wildfireFuel[f.fuel]?.label||f.fuel)+'</option>').join(""):'<option value="">Noch kein Brandherd</option>';
  if(fires.some(f=>f.id===saved))select.value=saved;
  else if(fires.length)select.value=fires[fires.length-1].id;
- const fire=selectedWildfire(),locked=!fire||st.ended;
+ const fire=selectedWildfire(),locked=!fire||st.ended;if(fire)normalizeWildfire(fire);
  for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfUpdateWind").disabled=locked;$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
  $("#wfFollowClock").disabled=locked;
- $("#wfFollowClock").checked=!!fire?.auto;if($("#wfSpeed")){$("#wfSpeed").value=String(fire?.speedFactor||120);$("#wfSpeed").disabled=locked;}
+ $("#wfFollowClock").checked=!!fire?.auto;if($("#wfSpeed")){$("#wfSpeed").value=String(fire?.speedFactor||1);$("#wfSpeed").disabled=locked;}
  if(fire){
   const geo=wildfireArea(fire),area=Math.PI*(geo.front+geo.back)/2*geo.flank/10000;
-  $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+(fire.minutes||0)+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Rücken ca. "+Math.round(geo.back)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Tempo ca. "+geo.speed.toFixed(1).replace(".",",")+" m/Übungsminute · Wind aus "+(fire.windFrom||"N")+" ("+fire.windBft+" Bft) · Modellwerte (nicht für Einsatztaktik geeignet)";
+  $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+Number(fire.minutes||0).toFixed(2).replace(".",",")+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Rücken ca. "+Math.round(geo.back)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Tempo ca. "+geo.speed.toFixed(1).replace(".",",")+" m/Übungsminute · Wind aus "+(fire.windFrom||"N")+" ("+fire.windBft+" Bft) · Modellwerte (nicht für Einsatztaktik geeignet)";
  }else $("#wfStatus").textContent="Erst einen Bewuchs wählen und den Brandausbruch per Kartenklick setzen.";
 }
 function updateWildfire(minutes,reason){
@@ -609,7 +609,7 @@ if($("#wfExtinguish")) $("#wfExtinguish").onclick=()=>{
  log("Flächenbrand","Als gelöscht markiert: "+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
-if($("#wfSpeed")) $("#wfSpeed").onchange=e=>{const f=selectedWildfire();if(!f||st.ended)return;f.speedFactor=Number(e.target.value)||120;f.lastClockSecond=currentSeconds();renderWildfireUI();persist()};
+if($("#wfSpeed")) $("#wfSpeed").onchange=e=>{const f=selectedWildfire();if(!f||st.ended)return;f.speedFactor=Number(e.target.value)||1;f.lastClockSecond=currentSeconds();renderWildfireUI();persist()};
 if($("#wfFollowClock")) $("#wfFollowClock").onchange=e=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.auto=e.target.checked;fire.lastClockSecond=currentSeconds();
@@ -624,7 +624,7 @@ function tickWildfires(){
   const dt=Math.max(0,Math.min(4,now-last));
   f.lastClockSecond=now;
   if(!dt)continue;
-  f.minutes=Math.min(180,(Number(f.minutes)||0)+(dt/60)*(Number(f.speedFactor)||120));
+  f.minutes=Math.min(180,(Number(f.minutes)||0)+(dt/60)*(Number(f.speedFactor)||1));
   changed=true;
   const full=Math.floor(f.minutes);
   if(full>Math.floor(Number(f.lastLoggedMinute)||0)){
