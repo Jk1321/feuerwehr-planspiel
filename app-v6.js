@@ -381,12 +381,12 @@ function renderWildfireUI(){
  if(fires.some(f=>f.id===saved))select.value=saved;
  else if(fires.length)select.value=fires[fires.length-1].id;
  const fire=selectedWildfire(),locked=!fire||st.ended;
- for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
+ for(const id of ["wfStepOne","wfStepFive"])$(id).disabled=locked||(fire?.status!=="active");$("#wfUpdateWind").disabled=locked;$("#wfStop").disabled=locked||(fire?.status==="extinguished");$("#wfExtinguish").disabled=locked||(fire?.status==="extinguished");$("#wfStop").textContent=fire?.status==="stopped"?"Ausbreitung fortsetzen":"Ausbreitung stoppen";
  $("#wfFollowClock").disabled=locked;
  $("#wfFollowClock").checked=!!fire?.auto;
  if(fire){
   const geo=wildfireArea(fire),area=Math.PI*(geo.front+geo.back)/2*geo.flank/10000;
-  $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+(fire.minutes||0)+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Modellwerte (nicht für Einsatztaktik geeignet)";
+  $("#wfStatus").textContent=(fire.status==="extinguished"?"Gelöscht":fire.status==="stopped"?"Ausbreitung angehalten":"Brandentwicklung aktiv")+" · "+(fire.minutes||0)+" simulierte Minuten · Fläche ca. "+area.toFixed(2).replace(".",",")+" ha · Kopf ca. "+Math.round(geo.front)+" m · Rücken ca. "+Math.round(geo.back)+" m · Flankenbreite ca. "+Math.round(geo.flank*2)+" m · Tempo ca. "+geo.speed.toFixed(1).replace(".",",")+" m/Übungsminute · Wind aus "+(fire.windFrom||"N")+" ("+fire.windBft+" Bft) · Modellwerte (nicht für Einsatztaktik geeignet)";
  }else $("#wfStatus").textContent="Erst einen Bewuchs wählen und den Brandausbruch per Kartenklick setzen.";
 }
 function updateWildfire(minutes,reason){
@@ -406,6 +406,7 @@ $("#wfIgnite").onclick=()=>{
 $("#wfSelect").onchange=renderWildfireUI;
 $("#wfStepOne").onclick=()=>updateWildfire(1,"Ausbreitung");
 $("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung");
+$("#wfUpdateWind").onclick=()=>{const f=selectedWildfire();if(!f||st.ended)return;f.windFrom=st.windDir||"N";f.windBft=Number(st.windSpeed)||0;log("Flächenbrand","Windbedingungen aktualisiert: "+f.windFrom+" / "+f.windBft+" Bft");renderWildfireUI();ensureWildfireLayers();persist()};
 $("#wfStop").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockMinute=Math.floor(st.clock/60);
