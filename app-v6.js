@@ -610,6 +610,7 @@ if($("#wfExtinguish")) $("#wfExtinguish").onclick=()=>{
  renderWildfireUI();ensureWildfireLayers();persist();
 };
 if($("#wfSpeed")) $("#wfSpeed").onchange=e=>{const f=selectedWildfire();if(!f||st.ended)return;f.speedFactor=Number(e.target.value)||1;f.lastClockSecond=currentSeconds();renderWildfireUI();persist()};
+for(const [id,key,min,max] of [["wfMoisture","moisturePct",0,100],["wfMidflame","midflameWind",0,20],["wfSlope","slopeDegrees",0,45]]){const input=$("#"+id);if(input)input.onchange=()=>{const f=selectedWildfire();if(!f||st.ended)return;const v=Number(input.value);if(!Number.isFinite(v))return toast("Ungültiger Wert",true);f[key]=Math.max(min,Math.min(max,v));f.lastClockSecond=currentSeconds();renderWildfireUI();ensureWildfireLayers();persist()}};
 if($("#wfFollowClock")) $("#wfFollowClock").onchange=e=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.auto=e.target.checked;fire.lastClockSecond=currentSeconds();
