@@ -401,7 +401,53 @@ let reviewSnapshot=null;
 
 /* Vegetation fire visual model: pedagogical geometry, not physical fire forecasting. */
 const wildfireFuel={grass:{label:"Gras",speed:5.0},crop:{label:"Getreide",speed:7.0},heath:{label:"Heide",speed:4.0},forest:{label:"Wald",speed:2.0}};
-function selectedWildfire(){const id=$("#wfSelect").value;return(st.wildfires||[]).find(x=>x.id===id)||null}
+function selectedWildfire(){
+ const id=$("#wfSelect")?.value,all=st.wildfires||[];
+ return all.find(x=>x.id===id)||all.at(-1)||null;
+}
+/* Basic Rothermel 1972 single dead fuel class, including Albini 1976
+ modifications, as described by Andrews 2018 RMRS-GTR-371 pp. 8-10.
+ Illustrative stand fuel proxies: not validated for real incident use. */
+const wildfireFuelParameters={
+ grass:{fuelModel:"1 (vereinfachtes Gras)",tonsAcre:.74,depthFt:1,sav:3500,moistureExt:.12},
+ crop:{fuelModel:"3 (vereinfachtes Gras)",tonsAcre:3,depthFt:2.5,sav:1500,moistureExt:.25},
+ heath:{fuelModel:"5 (nur 1-h-Anteil)",tonsAcre:1,depthFt:2,sav:2000,moistureExt:.20},
+ forest:{fuelModel:"8 (nur 1-h-Anteil)",tonsAcre:1.5,depthFt:.2,sav:2000,moistureExt:.30}
+};
+function rothermelBasicRate(f){
+ const p=wildfireFuelParameters[f.fuel]||wildfireFuelParameters.forest;
+ const sigma=p.sav,w0=p.tonsAcre*2000/43560,depth=p.depthFt;
+ const bulk=w0/depth,beta=bulk/32,betaOpt=3.348*Math.pow(sigma,-.8189);
+ const relative=beta/betaOpt,A=133*Math.pow(sigma,-.7913);
+ const gammaMax=Math.pow(sigma,1.5)/(495+.0594*Math.pow(sigma,1.5));
+ const gamma=gammaMax*Math.pow(relative,A)*Math.exp(A*(1-relative));
+ const moisture=Math.max(0,Math.min(1,Number(f.moisturePct??12)/100));
+ const r=Math.min(1,moisture/p.moistureExt);
+ if(r>=1)return 0;
+ const etaM=Math.max(0,1-2.59*r+5.11*r*r-3.52*r*r*r);
+ const etaS=Math.min(1,.174*Math.pow(.01,-.19));
+ const intensity=gamma*w0*(1-.0555)*8000*etaM*etaS;
+ const flux=Math.exp((.792+.681*Math.sqrt(sigma))*(beta+.1))/(192+.2595*sigma);
+ const epsilon=Math.exp(-138/sigma),qig=250+1116*moisture;
+ const u=Math.max(0,Math.min(20,Number(f.midflameWind??.3)))*196.850394;
+ const C=7.47*Math.exp(-.133*Math.pow(sigma,.55));
+ const B=.02526*Math.pow(sigma,.54),E=.715*Math.exp(-.000359*sigma);
+ const phiWind=C*Math.pow(u,B)*Math.pow(relative,-E);
+ const rad=Math.max(0,Math.min(45,Number(f.slopeDegrees)||0))*Math.PI/180;
+ const phiSlope=5.275*Math.pow(beta,-.3)*Math.pow(Math.tan(rad),2);
+ const feetPerMinute=intensity*flux*(1+phiWind+phiSlope)/(bulk*epsilon*qig);
+ return Number.isFinite(feetPerMinute)?Math.max(0,feetPerMinute*.3048):0;
+}
+function normalizeWildfire(f){
+ if(!f)return null;
+ // Migrate earlier scenario saves with excessive 30x–300x default.
+ if(!Number.isFinite(Number(f.speedFactor))||Number(f.speedFactor)>5||Number(f.speedFactor)<=0)f.speedFactor=1;
+ if(!Number.isFinite(Number(f.moisturePct)))f.moisturePct=12;
+ if(!Number.isFinite(Number(f.midflameWind)))f.midflameWind=.3;
+ if(!Number.isFinite(Number(f.slopeDegrees)))f.slopeDegrees=0;
+ return f;
+}
+
 
 /* Visual wildfire artwork (custom SVG textures). Didactic illustration, NOT an operational fire model. */
 const wildfireArtwork=[
@@ -437,7 +483,7 @@ function registerWildfireArtwork(){
 }
 function wildfireArea(fire){
  const time=Math.max(0,Math.min(180,Number(fire.minutes)||0));
- const speed=(wildfireFuel[fire.fuel]?.speed||4)*(1+Math.min(12,Math.max(0,Number(fire.windBft??st.windSpeed)||0))*.17);
+ const speed=rothermelBasicRate(normalizeWildfire(fire));
  const front=5+time*speed,back=4+time*speed*.16,flank=4+time*speed*.36;
  const direction=windToDegrees(fire.windFrom||st.windDir),a=direction*Math.PI/180;
  const centerShift=(front-back)/2,half=(front+back)/2;
