@@ -374,7 +374,7 @@ function ensureWildfireLayers(){
  }catch(e){console.warn("Flächenbranddarstellung:",e)}
 }
 function renderWildfireUI(){
- if(isViewer)return;
+ if(isViewer||!$("#wfSelect"))return;
  const select=$("#wfSelect"),saved=select.value;
  const fires=st.wildfires||[];
  select.innerHTML=fires.length?fires.map(f=>'<option value="'+safe(f.id)+'">'+safe(f.label||"Flächenbrand")+' · '+safe(wildfireFuel[f.fuel]?.label||f.fuel)+'</option>').join(""):'<option value="">Noch kein Brandherd</option>';
@@ -398,28 +398,28 @@ function updateWildfire(minutes,reason){
  log("Flächenbrand",reason+" · "+fire.label+" · "+fire.minutes+" Minuten");
  renderWildfireUI();ensureWildfireLayers();persist();
 }
-$("#wfIgnite").onclick=()=>{
+if($("#wfIgnite")) $("#wfIgnite").onclick=()=>{
  if(st.ended)return toast("Einsatz bereits beendet.",true);
  tool="wildfire";$("#map").classList.add("wildfire-pick-mode");
  toast("Auf der Karte auf den Brandausbruch klicken.");
 };
-$("#wfSelect").onchange=renderWildfireUI;
-$("#wfStepOne").onclick=()=>updateWildfire(1,"Ausbreitung");
-$("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung");
-$("#wfUpdateWind").onclick=()=>{const f=selectedWildfire();if(!f||st.ended)return;f.windFrom=st.windDir||"N";f.windBft=Number(st.windSpeed)||0;log("Flächenbrand","Windbedingungen aktualisiert: "+f.windFrom+" / "+f.windBft+" Bft");renderWildfireUI();ensureWildfireLayers();persist()};
-$("#wfStop").onclick=()=>{
+if($("#wfSelect")) $("#wfSelect").onchange=renderWildfireUI;
+if($("#wfStepOne")) $("#wfStepOne").onclick=()=>updateWildfire(1,"Ausbreitung");
+if($("#wfStepFive")) $("#wfStepFive").onclick=()=>updateWildfire(5,"Ausbreitung");
+if($("#wfUpdateWind")) $("#wfUpdateWind").onclick=()=>{const f=selectedWildfire();if(!f||st.ended)return;f.windFrom=st.windDir||"N";f.windBft=Number(st.windSpeed)||0;log("Flächenbrand","Windbedingungen aktualisiert: "+f.windFrom+" / "+f.windBft+" Bft");renderWildfireUI();ensureWildfireLayers();persist()};
+if($("#wfStop")) $("#wfStop").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.status=fire.status==="stopped"?"active":"stopped";fire.auto=false;fire.lastClockMinute=Math.floor(st.clock/60);
  log("Flächenbrand",(fire.status==="stopped"?"Ausbreitung angehalten: ":"Ausbreitung fortgesetzt: ")+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
-$("#wfExtinguish").onclick=()=>{
+if($("#wfExtinguish")) $("#wfExtinguish").onclick=()=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.status="extinguished";fire.auto=false;
  log("Flächenbrand","Als gelöscht markiert: "+fire.label);
  renderWildfireUI();ensureWildfireLayers();persist();
 };
-$("#wfFollowClock").onchange=e=>{
+if($("#wfFollowClock")) $("#wfFollowClock").onchange=e=>{
  const fire=selectedWildfire();if(!fire||st.ended)return;
  fire.auto=e.target.checked;fire.lastClockMinute=Math.floor(st.clock/60);
  renderWildfireUI();persist();
