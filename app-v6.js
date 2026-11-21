@@ -91,7 +91,7 @@ function renderSyncedClock(){
  const leader=$("#timeCounter"),participant=$("#participantTime"),status=$("#participantClockStatus");
  if(leader)leader.textContent=shown;
  if(participant)participant.textContent=shown;
- const introClock=$("#participantIntroClock"),introStatus=$("#participantIntroClockStatus");if(introClock)introClock.textContent=shown;if(introStatus)introStatus.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
+ const introClock=$("#participantIntroClock"),introStatus=$("#participantIntroClockStatus");if(introClock)introClock.textContent=shown;if(introStatus)introStatus.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";const sightClock=$("#participantSightClock"),sightStatus=$("#participantSightClockStatus");if(sightClock)sightClock.textContent=shown;if(sightStatus)sightStatus.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
  if(status)status.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
 }
 function cueHeading(type){
