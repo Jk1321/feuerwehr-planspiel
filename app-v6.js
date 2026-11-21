@@ -157,7 +157,8 @@ if(kind==="wasser")return wrap('<path d="M24 5C15 20 10 24 10 31a14 14 0 0 0 28 
 const txt={bereitstellung:"BR",leitung:"EL",abschnitt:"EA",vu:"VU"}[kind]||"?";
 return wrap('<path d="M24 3 45 24 24 45 3 24Z" fill="'+c+'" stroke="#dae7f0" stroke-width="2"/><text x="24" y="29" font-size="'+(txt.length>2?12:17)+'" font-weight="800" text-anchor="middle" fill="'+(kind==="leitung"?"#192838":"#fff")+'">'+txt+"</text>")}
 function stepText(){const step=isViewer?3:st.step;$$("[data-step]").forEach((b,i)=>{b.classList.toggle("current",i===step);b.classList.toggle("finished",i<step);b.setAttribute("aria-current",i===step?"step":"false")});$("[data-step-title]").textContent=steps[step];$("#progress").style.width=((step+1)/4*100)+"%"}
-function storeForm(){if(isViewer)return;for(const key of ["title","stichwort","meldebild","address","date","time","weather","temp","windDir","windSpeed","visibility","scene"]){const el=$('[name="'+key+'"]');if(el)st[key]=el.value}st.dynamic=$("#dynamicEnabled")?.checked??st.dynamic;persist()}
+function captureVehicleInputs(){if(isViewer)return;$$("[data-v][data-field]").forEach(input=>{const v=(st.vehicles||[]).find(item=>item.id===input.dataset.v);if(v)v[input.dataset.field]=input.value})}
+function storeForm(){if(isViewer)return;captureVehicleInputs();for(const key of ["title","stichwort","meldebild","address","date","time","weather","temp","windDir","windSpeed","visibility","scene"]){const el=$('[name="'+key+'"]');if(el)st[key]=el.value}st.dynamic=$("#dynamicEnabled")?.checked??st.dynamic;persist()}
 function form(){for(const key of ["title","stichwort","meldebild","address","date","time","weather","temp","windDir","windSpeed","visibility","scene"]){const el=$('[name="'+key+'"]');if(el)el.value=st[key]??""}$("#dynamicEnabled").checked=st.dynamic;renderVehicles();renderPhoto();renderCues();renderVersions();updateSummary()}
 function go(step,skipFormSave=false){if(step<0||step>3)return;document.body.classList.remove("landing-mode");if(!skipFormSave)storeForm();st.step=step;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===step));stepText();form();if(step===3){syncAlarmedVehicles();setupMap();renderTools();requestAnimationFrame(()=>{map?.resize();setTimeout(()=>map?.resize(),180)})}window.scrollTo({top:0,behavior:"smooth"});persist()}
 /* Vehicles configured in step 1 become movable initial map symbols.
@@ -181,7 +182,7 @@ function syncAlarmedVehicles(){
   obj.label=v.type+(v.radio?" · "+v.radio:"");
  }
 }
-function renderVehicles(){$("#vehicles").innerHTML=st.vehicles.map((v,i)=>'<div class="vehicle-line"><div class="field"><label>Fahrzeug</label><input data-v="'+v.id+'" data-field="type" value="'+safe(v.type)+'" placeholder="LF 10"></div><div class="field"><label>Funkrufname</label><input data-v="'+v.id+'" data-field="radio" value="'+safe(v.radio)+'" placeholder="2-42-1"></div><div class="field"><label>Stärke</label><input data-v="'+v.id+'" data-field="crew" value="'+safe(v.crew)+'" placeholder="0/1/8/9"></div><button class="icon-btn" title="Fahrzeug entfernen" data-del-v="'+v.id+'">×</button></div>').join("");$$("[data-v]").forEach(x=>x.onchange=()=>{const v=st.vehicles.find(v=>v.id===x.dataset.v);if(v){v[x.dataset.field]=x.value;if(st.step===3){syncAlarmedVehicles();renderMarkers();}}persist()});$$("[data-del-v]").forEach(x=>x.onclick=()=>{st.vehicles=st.vehicles.filter(v=>v.id!==x.dataset.delV);syncAlarmedVehicles();renderVehicles();renderMarkers();persist()})}
+function renderVehicles(){$("#vehicles").innerHTML=st.vehicles.map((v,i)=>'<div class="vehicle-line"><div class="field"><label>Fahrzeug</label><input data-v="'+v.id+'" data-field="type" value="'+safe(v.type)+'" placeholder="LF 10"></div><div class="field"><label>Funkrufname</label><input data-v="'+v.id+'" data-field="radio" value="'+safe(v.radio)+'" placeholder="2-42-1"></div><div class="field"><label>Stärke</label><input data-v="'+v.id+'" data-field="crew" value="'+safe(v.crew)+'" placeholder="0/1/8/9"></div><button class="icon-btn" title="Fahrzeug entfernen" data-del-v="'+v.id+'">×</button></div>').join("");$$("[data-v]").forEach(x=>{const update=()=>{const v=st.vehicles.find(item=>item.id===x.dataset.v);if(v){v[x.dataset.field]=x.value;if(st.step===3){syncAlarmedVehicles();renderMarkers();}}persist()};x.oninput=update;x.onchange=update});$$("[data-del-v]").forEach(x=>x.onclick=()=>{st.vehicles=st.vehicles.filter(v=>v.id!==x.dataset.delV);syncAlarmedVehicles();renderVehicles();renderMarkers();persist()})}
 $("#addVehicle").onclick=()=>{storeForm();st.vehicles.push({id:uid(),type:"",radio:"",crew:""});renderVehicles();persist()};
 $$("[data-step]").forEach(x=>x.onclick=()=>!isViewer&&go(+x.dataset.step));
 $$("[data-next]").forEach(x=>x.onclick=()=>go(st.step+1));
@@ -194,16 +195,17 @@ function toggleIntensity(categoryId,fieldId,labelId){
  $(fieldId).hidden=!show;
  $(labelId).textContent=type==="fire"?"Ausmaß der Brandentwicklung":"Ausmaß der Rauchentwicklung";
 }
-$("#cueType").onchange=()=>toggleIntensity("#cueType","#cueIntensityField","#cueIntensityLabel");
-$("#liveType").onchange=()=>toggleIntensity("#liveType","#liveIntensityField","#liveIntensityLabel");
+function toggleCueSender(typeId,fieldId){const el=$(fieldId);if(el)el.hidden=$(typeId).value!=="report"}
+$("#cueType").onchange=()=>{toggleIntensity("#cueType","#cueIntensityField","#cueIntensityLabel");toggleCueSender("#cueType","#cueSenderField")};
+$("#liveType").onchange=()=>{toggleIntensity("#liveType","#liveIntensityField","#liveIntensityLabel");toggleCueSender("#liveType","#liveSenderField")};
 toggleIntensity("#cueType","#cueIntensityField","#cueIntensityLabel");
-toggleIntensity("#liveType","#liveIntensityField","#liveIntensityLabel");
+toggleIntensity("#liveType","#liveIntensityField","#liveIntensityLabel");toggleCueSender("#cueType","#cueSenderField");toggleCueSender("#liveType","#liveSenderField");
 $("#addCue").onclick=()=>{
  storeForm();
  const type=$("#cueType").value,affected=type==="fire"||type==="smoke";
  if(!$("#cueText").value.trim())return toast("Bitte einen konkreten Meldungstext eingeben.",true);
- st.cues.push({id:uid(),minute:Number($("#cueMinute").value)||0,type,description:$("#cueText").value.trim(),state:"ready",...(affected?{intensity:Number($("#cueIntensity").value)}:{})});
- $("#cueText").value="";renderCues();triggerScheduledCues();persist();
+ st.cues.push({id:uid(),minute:Number($("#cueMinute").value)||0,type,description:$("#cueText").value.trim(),sender:type==="report"?$("#cueSender").value.trim():"",state:"ready",...(affected?{intensity:Number($("#cueIntensity").value)}:{})});
+ $("#cueText").value="";$("#cueSender").value="";renderCues();triggerScheduledCues();persist();
 };
 function renderCues(){
  const list=Array.isArray(st.cues)?st.cues:[];const out=$("#cues");
@@ -216,7 +218,7 @@ function renderCues(){
  renderHistory();
 }
 function affectedCue(type,intensity,original){
- const current=st.activeCue||{},next={type,description:original.description,fire:current.fire??0,smoke:current.smoke??0};
+ const current=st.activeCue||{},next={type,description:original.description,sender:type==="report"?String(original.sender||"").trim():"",fire:current.fire??0,smoke:current.smoke??0};
  if(type==="fire")next.fire=intensity===undefined?Number(original.fire??0):Number(intensity);
  if(type==="smoke")next.smoke=intensity===undefined?Number(original.smoke??0):Number(intensity);
  return next;
@@ -240,9 +242,9 @@ $("#applyNow").onclick=()=>{
  if(!st.started)return toast("Bitte zuerst den Übungsdurchlauf mit „Start“ beginnen.",true);
  const text=$("#liveText").value.trim();if(!text)return;
  const type=$("#liveType").value,degree=(type==="fire"||type==="smoke")?Number($("#liveIntensity").value):undefined;
- st.activeCue=affectedCue(type,degree,{description:text});
+ st.activeCue=affectedCue(type,degree,{description:text,sender:type==="report"?$("#liveSender").value.trim():""});
  st.cueSignal={id:uid(),at:Date.now()};log("Spontane Lageänderung",text);
- $("#liveText").value="";renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Spontane Lageänderung freigegeben");
+ $("#liveText").value="";$("#liveSender").value="";renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Spontane Lageänderung freigegeben");
 };
 
 /* Photo gallery of released and unreleased viewpoints. */
@@ -345,7 +347,7 @@ $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")|
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
 function updateSummary(){
- renderWind();const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+bftLabel(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
+ renderWind();const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+beaufortDescription(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
@@ -356,7 +358,7 @@ function renderParticipantScene(){
  else{p.hidden=true;w.hidden=false;w.textContent="Noch keine Ansicht freigegeben."}
  const c=st.activeCue,msg=String(c?.description||"").trim();
  $("#participantCue").textContent=c?(msg&&msg!=="Neue Lagemeldung"?msg:"Für diese Einspielung fehlt ein Meldungstext."):st.meldebild||"Ausgangslage – Erkundung beginnen.";
- $("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";
+ $("#participantSceneTitle").textContent=st.ended?"Einsatz beendet":c?cueHeading(c.type):"Erstes Lagebild";const senderEl=$("#participantCueSender");if(senderEl){const from=c?.type==="report"?String(c.sender||"").trim():"";senderEl.hidden=!from;senderEl.textContent=from?"Von: "+from:"";}
  $("#participantSceneNote").textContent=selected?.title||st.imageCredit||"Frontalansicht des Einsatzobjekts";
  if(isViewer)refreshReleaseViews();renderEnded();renderSyncedClock();
 }
@@ -757,11 +759,13 @@ $("#replayStart").onclick=()=>{
 };
 const windDegrees={N:0,NO:45,O:90,SO:135,S:180,SW:225,W:270,NW:315};
 function windToDegrees(dir){return (windDegrees[dir]??0)+180}
+const beaufortDescriptions=["Windstille","leiser Zug","leichte Brise","schwache Brise","mäßige Brise","frische Brise","starker Wind","steifer Wind","stürmischer Wind","Sturm","schwerer Sturm","orkanartiger Sturm","Orkan"];
+function beaufortDescription(bft){const n=Number(bft);return bft==null||bft===""||!Number.isInteger(n)||n<0||n>12?"Windstärke nicht festgelegt":n+" Bft · "+beaufortDescriptions[n]}
 function renderWind(){
  const dir=st.windDir||"",strength=st.windSpeed;
  const a=$("#windArrow");if(a)a.style.transform="rotate("+windToDegrees(dir)+"deg)";
  $("#windMapDirection").textContent=dir?"Wind aus "+dir:"Windrichtung nicht festgelegt";
- $("#windMapSpeed").textContent=strength!==""&&strength!=null?strength+" Bft":"Windstärke nicht festgelegt";
+ $("#windMapSpeed").textContent=beaufortDescription(strength);
 }
 
 function renderHistory(){
