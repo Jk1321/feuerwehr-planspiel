@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 8.0**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 8.2**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,15 @@ Aktueller Entwicklungsstand: **Version 8.0**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Teilnehmeransicht in drei Freigabestufen – Version 8.2
+
+- **Seite 1 – Allgemeine Lage:** Ist von Anfang an verfügbar. Sie zeigt Alarmstichwort, Adresse, Datum, Alarmzeit, Wetter, Temperatur, Windrichtung und Beaufort-Wert, Sicht, Meldebild sowie alle ausrückenden Fahrzeuge mit Funkrufnamen und Besatzungsstärke. Die Übungsuhr läuft hier synchron mit.
+- **Seite 2 – Lage auf Sicht:** Wird vom Übungsleiter separat freigegeben. Sie zeigt die ausgewählte Einsatzstellenansicht sowie die separat freigegebenen zusätzlichen Einsatzbilder. Die Lagekarte bleibt auf dieser Seite ausgeblendet.
+- **Seite 3 – Lagekarte / laufendes Planspiel:** Wird ebenfalls separat freigegeben. Sie enthält die bestehende Lagekarte, Einspielungen, Übungsuhr, Bilder und Einsatzinformationen.
+- **Regie:** Eigene Schalter für Seite 2 und 3, dazu eine Auswahl, welche bereits freigegebene Seite gerade aktiv angezeigt werden soll. Bei einer neuen Freigabe wechselt die Teilnehmeransicht automatisch zur neu freigegebenen Stufe. Gesperrte Seiten sind nicht anwählbar; bei Zurücknahme einer Freigabe fällt die Teilnehmeransicht auf eine weiterhin verfügbare Stufe zurück.
+- **Navigation:** Der Teilnehmer kann zwischen allen bisher freigegebenen Seiten selbst wechseln, bis die Übungsleitung eine andere Seite aktiv einspielt. Bestehende Detailfreigaben für Frontalansicht, Karte und Galerie bleiben unabhängig verfügbar.
+- **Synchronisierung:** Wie bisher nur zwischen Browser-Tabs derselben Browserumgebung über BroadcastChannel. Für getrennte Geräte ist eine spätere Server-Synchronisierung erforderlich.
 
 ## Änderungen in Version 8.0
 
