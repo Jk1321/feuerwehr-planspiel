@@ -221,9 +221,47 @@ body.viewer[data-viewer-page="map"] .participant-intro,body.viewer[data-viewer-p
 body.viewer[data-viewer-page="intro"] .participant-intro{display:block!important}
 @media(max-width:800px){.participant-intro-cards{grid-template-columns:repeat(2,1fr)}.participant-pages-buttons button{font-size:11px}}
 @media(max-width:550px){.participant-pages-buttons{gap:5px}.participant-pages-buttons button{padding:9px 3px;font-size:10px}.participant-pages-buttons button span{font-size:9px}.participant-pages-title{align-items:flex-start;flex-direction:column}.participant-intro-content{padding:16px}.participant-intro-cards{grid-template-columns:1fr}.participant-intro-hero{padding:24px 18px}.participant-intro-vehicle{grid-template-columns:1fr 1fr}.participant-intro-vehicle span:last-child{grid-column:1/-1}}
+
+/* v8.3: immersive briefing/photo stages; the established map layout remains untouched. */
+.participant-sight-stage{display:none}
+body.viewer[data-viewer-page="intro"] .topbar,body.viewer[data-viewer-page="sight"] .topbar{display:none!important}
+body.viewer[data-viewer-page="intro"] .workspace,body.viewer[data-viewer-page="sight"] .workspace{max-width:none!important;width:100%;padding:0!important;margin:0!important}
+body.viewer[data-viewer-page="intro"] .participant-pages-nav,body.viewer[data-viewer-page="sight"] .participant-pages-nav{display:none!important}
+body.viewer[data-viewer-page="intro"] .participant-intro{display:flex!important;flex-direction:column;min-height:100dvh;width:100%;max-width:none;border:0!important;border-radius:0!important;background:#f2f6f9}
+body.viewer[data-viewer-page="intro"] .participant-intro-hero{padding:clamp(28px,5vh,68px) clamp(24px,7vw,108px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-hero h2{font-size:clamp(32px,4.2vw,60px);letter-spacing:-.025em}
+body.viewer[data-viewer-page="intro"] .participant-intro-hero p{max-width:900px;font-size:clamp(13px,1.3vw,17px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-content{flex:1;padding:clamp(20px,3.8vh,42px) clamp(24px,7vw,108px);max-width:1550px;width:100%;margin:auto;align-content:start;gap:clamp(12px,2vh,23px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(10px,1.3vw,18px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-fact{padding:clamp(13px,1.5vw,22px);background:#fff;box-shadow:0 2px 14px #1330470c}
+body.viewer[data-viewer-page="intro"] .participant-intro-fact strong{font-size:clamp(15px,1.55vw,22px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-fact span{font-size:clamp(11px,1vw,13px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-panel{padding:clamp(16px,2vw,25px);box-shadow:0 2px 14px #1330470b}
+body.viewer[data-viewer-page="intro"] .participant-intro-panel p{font-size:clamp(15px,1.45vw,19px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-vehicle{padding:clamp(10px,1vw,18px);grid-template-columns:minmax(140px,1.2fr) minmax(150px,1fr) minmax(110px,.7fr);font-size:clamp(12px,1.1vw,15px)}
+body.viewer[data-viewer-page="intro"] .participant-intro-vehicle strong{font-size:clamp(14px,1.25vw,18px)}
+body.viewer[data-viewer-page="sight"]{background:#0b151d}
+body.viewer[data-viewer-page="sight"] .participant-sight-stage{display:flex!important;position:relative;flex-direction:column;width:100%;height:100dvh;min-height:0;background:#0d1923;color:#f6fbff;overflow:hidden}
+.sight-stage-header{flex:0 0 auto;padding:clamp(14px,2.5vh,28px) clamp(16px,3.5vw,54px) 10px;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.sight-stage-header span{font-size:clamp(10px,1vw,13px);letter-spacing:.11em;color:#abc9d9;font-weight:750}
+.sight-stage-header h2{margin:0;font-size:clamp(21px,2.4vw,33px);font-weight:800}
+.sight-stage-photo{flex:1 1 0;min-height:0;min-width:0;display:grid;place-items:center;padding:0 clamp(10px,2vw,32px);overflow:hidden}
+.sight-stage-photo img{display:block;width:100%;height:100%;min-width:0;min-height:0;max-width:100%;max-height:100%;object-fit:contain;object-position:center center;border-radius:5px}
+.sight-stage-photo img[hidden]{display:none!important}
+.sight-stage-empty{font-size:17px;color:#9fb9c8;border:1px dashed #4a6b7d;padding:45px;border-radius:12px;text-align:center}
+.sight-stage-footer{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px clamp(16px,3.5vw,54px);font-size:12px;color:#adc6d6}
+.sight-stage-footer strong{font-weight:650;overflow-wrap:anywhere}
+.sight-stage-gallery{flex:0 0 auto;padding:0 clamp(16px,3.5vw,54px) 14px}
+.sight-stage-gallery-choices{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:2px}
+.sight-stage-gallery-choices button{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border-radius:8px;background:#1b3445;color:#e4f1f8;border:1px solid #36586c;max-width:225px;font-size:11px;text-align:left}
+.sight-stage-gallery-choices button.selected{background:#2a5873;border-color:#b4d6e7}
+.sight-stage-gallery-choices img{width:57px;height:40px;flex:0 0 57px;object-fit:cover;border-radius:5px}
+.sight-stage-gallery-choices button span{min-width:0;overflow-wrap:anywhere;max-height:38px;overflow:hidden}
+@media(max-width:1000px){body.viewer[data-viewer-page="intro"] .participant-intro-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){body.viewer[data-viewer-page="intro"] .participant-intro-cards{grid-template-columns:1fr}body.viewer[data-viewer-page="intro"] .participant-intro-vehicle{grid-template-columns:1fr 1fr}body.viewer[data-viewer-page="intro"] .participant-intro-vehicle span:last-child{grid-column:1/-1}.sight-stage-header{align-items:flex-start;flex-direction:column}.sight-stage-gallery-choices button{max-width:160px}}
 </style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
-<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.2</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
+<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.3</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
 <div class="stepper" aria-label="Szenariovorbereitung">
 <button class="step current" data-step="0"><span class="step-num">01</span><span>Alarmierung</span></button>
@@ -273,6 +311,12 @@ body.viewer[data-viewer-page="intro"] .participant-intro{display:block!important
   <div class="participant-intro-clock"><span>Übungszeit</span><strong id="participantIntroClock">00:00:00</strong><span id="participantIntroClockStatus">Nicht gestartet</span></div>
   <p class="participant-intro-hint" id="participantIntroNextHint">Die Lage auf Sicht wird von der Übungsleitung freigegeben.</p>
  </div>
+</section>
+<section class="participant-sight-stage" id="participantSightStage" hidden aria-label="Lage auf Sicht">
+ <div class="sight-stage-header"><span>02 / 03 · ERKUNDUNG</span><h2>Lage auf Sicht</h2></div>
+ <div class="sight-stage-photo" id="participantSightPhotoFrame"><img id="participantSightPhoto" alt="Erste Lage auf Sicht" hidden><div id="participantSightEmpty" class="sight-stage-empty">Noch kein Einsatzbild freigegeben.</div></div>
+ <div class="sight-stage-footer"><strong id="participantSightCaption">Frontalansicht der Einsatzstelle</strong><span id="participantSightPhotoCount"></span></div>
+ <div class="sight-stage-gallery" id="participantSightGallery" hidden><div id="participantSightGalleryChoices" class="sight-stage-gallery-choices"></div></div>
 </section>
 <div id="viewerBanner" class="view-banner" hidden>Teilnehmeransicht · nur freigegebene Lageinformationen</div><div class="play-grid"><div><div class="map-card"><div class="map-head"><h2>04 · Lagekarte</h2><div class="map-controls"><button id="hydrantToggle" title="Öffentlich kartierte Hydranten aus OpenStreetMap suchen" class="small">Hydranten</button><select id="mapStyle" aria-label="Kartentyp"><option value="osm">OpenStreetMap</option><option value="satellite">Satellit</option><option value="streets">MapTiler Straßenkarte</option></select><input id="mapKey" type="password" placeholder="MapTiler Key" aria-label="MapTiler-Schlüssel"></div></div><div class="map-wrap"><div id="map" class="map"></div><div id="weatherMapBadge" class="weather-map-badge" aria-label="Windbedingungen"><span id="windArrow">↑</span><div><strong id="windMapDirection">Windrichtung –</strong><small id="windMapSpeed">Windstärke –</small></div></div><div id="wildfireLegend" class="wildfire-legend" hidden><span><i class="wf-legend-smoke"></i> Rauch</span><span><i class="wf-legend-flame"></i> Feuerfront</span><span><i class="wf-legend-burn"></i> Verbrannte Fläche</span><small>Schematische Darstellung</small></div></div><div id="mapAnnouncement" class="map-announcement" hidden></div></div><div class="steps-actions" id="mapActions"><button data-back>← Vorbereitung</button><button id="clearMap" class="danger">Karte leeren</button><button id="openViewer" class="primary right">Teilnehmeransicht öffnen</button></div><div class="paper tactical-editor" id="tacticalEditor" style="margin-top:15px"><div class="block-title"><h2>Taktische Zeichen</h2><span class="badge">Nur Übungsleitung</span></div>
 <p>Wähle Organisation und Zeichen. Fahrzeuge kannst du jederzeit im Übungsverlauf hinzufügen, auch wenn sie nicht vorab alarmiert wurden.</p>
@@ -375,4 +419,4 @@ body.viewer[data-viewer-page="intro"] .participant-intro{display:block!important
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v6.js?v=8.2" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v6.js?v=8.3" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
