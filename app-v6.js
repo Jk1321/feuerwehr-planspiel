@@ -262,6 +262,30 @@ function renderGalleryEditor(){
  $$("[data-gallery-show]").forEach(b=>b.onclick=()=>{const p=findGalleryPhoto(b.dataset.galleryShow);if(!p)return;if(!p.released)return toast("Bitte die Ansicht zuerst freigeben.",true);st.activeGalleryId=p.id;participantChosenPhoto=null;log("Fotoeinspielung",p.title);renderParticipantScene();persist();toast("Ansicht für Fahrzeugführer gewechselt")});
  $$("[data-gallery-remove]").forEach(b=>b.onclick=()=>{const p=findGalleryPhoto(b.dataset.galleryRemove);if(!p)return;if(!confirm("Zusatzbild "+p.title+" entfernen?"))return;st.gallery=st.gallery.filter(x=>x.id!==p.id);if(st.activeGalleryId===p.id)st.activeGalleryId=null;renderGalleryEditor();renderParticipantScene();persist()});
 }
+function renderSightStage(choices,selectedId){
+ const frame=$("#participantSightPhoto"),empty=$("#participantSightEmpty"),gallery=$("#participantSightGallery"),host=$("#participantSightGalleryChoices");
+ if(!frame||!empty||!gallery||!host)return;
+ const chosen=choices.find(p=>p.id===selectedId)||null;
+ if(chosen?.dataUrl){
+  if(frame.getAttribute("src")!==chosen.dataUrl)frame.src=chosen.dataUrl;
+  frame.hidden=false;empty.hidden=true;
+  frame.onerror=()=>{frame.hidden=true;empty.hidden=false;empty.textContent="Diese Aufnahme konnte nicht angezeigt werden."};
+ }else{
+  frame.hidden=true;empty.hidden=false;empty.textContent="Die erste Lage auf Sicht wurde noch nicht freigegeben.";
+ }
+ const caption=$("#participantSightCaption"),count=$("#participantSightPhotoCount");
+ if(caption)caption.textContent=chosen?.title||"Erste Lage auf Sicht";
+ if(count)count.textContent=choices.length>1?choices.length+" freigegebene Ansichten":"";
+ gallery.hidden=choices.length<2;
+ host.innerHTML=choices.length>1?choices.map(p=>
+  '<button type="button" class="'+(p.id===selectedId?'selected':'')+'" data-sight-photo="'+safe(p.id)+'"><img src="'+p.dataUrl+'" alt=""><span>'+safe(p.title||"Einsatzansicht")+'</span></button>'
+ ).join(""):"";
+ host.querySelectorAll("[data-sight-photo]").forEach(b=>b.onclick=()=>{
+  participantChosenPhoto=b.dataset.sightPhoto;
+  renderParticipantScene();
+ });
+}
+
 function renderParticipantGallery(){
  const bar=$("#participantGalleryBar"),host=$("#participantGalleryChoices");
  const choices=[];
@@ -272,6 +296,7 @@ function renderParticipantGallery(){
  bar.hidden=!choices.length;$("#galleryAvailableCount").textContent=choices.length+" Ansichten";
  host.innerHTML=choices.map(p=>'<button type="button" data-view-gallery="'+safe(p.id)+'" class="'+(p.id===selected?'selected':'')+'"><img src="'+p.dataUrl+'" alt=""><span>'+safe(p.title)+'</span></button>').join("");
  host.querySelectorAll("[data-view-gallery]").forEach(b=>b.onclick=()=>{participantChosenPhoto=b.dataset.viewGallery;renderParticipantScene()});
+ renderSightStage(choices,selected);
  return choices.find(p=>p.id===selected)||null;
 }
 $("#galleryUpload").onchange=async e=>{
@@ -384,6 +409,7 @@ function renderViewerPages(){
  if(!nav)return;
  if(!viewerStageOpen(participantCurrentPage))participantCurrentPage="intro";
  document.body.dataset.viewerPage=participantCurrentPage;
+ const sightStage=$("#participantSightStage");if(sightStage)sightStage.hidden=participantCurrentPage!=="sight";
  const idx=viewerStages.findIndex(([page])=>page===participantCurrentPage);
  const stage=viewerStages[idx]||viewerStages[0];
  const status=$("#participantPageStatus");
@@ -983,7 +1009,7 @@ $("#endExercise").onclick=()=>{
  toast("Einsatz beendet. Die Lage wurde abgeschlossen.");
 };
 $("#printBtn").onclick=()=>{if(!st.started)return toast("Die Übungsdokumentation beginnt erst mit „Start“.",true);const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(bftLabel(st.windSpeed))+"</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.filter(x=>x.type!=="Teilnehmerfreigabe").map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
-function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");$("#participantPagesNav").hidden=false;$("#participantIntro").hidden=false;participantCurrentPage="intro";lastDirectorPage=st.viewerPage||"intro";st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();renderViewerPages();bc?.postMessage({kind:"request"})}
+function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");$("#participantPagesNav").hidden=false;$("#participantIntro").hidden=false;$("#participantSightStage").hidden=true;participantCurrentPage="intro";lastDirectorPage=st.viewerPage||"intro";st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();renderViewerPages();bc?.postMessage({kind:"request"})}
 if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){const next=e.data.state;if(st.activeGalleryId!==next.activeGalleryId)participantChosenPhoto=null;const directorChanged=next.viewerPage!==lastDirectorPage;st={...initial(),...next,step:3};if(directorChanged){participantCurrentPage=acceptedViewerPage(st.viewerPage||"intro");lastDirectorPage=st.viewerPage||"intro";}if(!viewerStageOpen(participantCurrentPage))participantCurrentPage="intro";updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();renderViewerPages();if(map){renderMarkers();renderHydrants()}}else if(!isViewer&&e.data?.kind==="request")persist()};
 // A participant updates its clock from the last shared anchor even between broadcast packets.
 // BroadcastChannel synchronizes separate tabs within the same browser, not remote devices.
