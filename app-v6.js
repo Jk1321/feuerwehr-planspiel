@@ -73,9 +73,9 @@ function tacticalSceneSvg(kind,label,small=false){
  const textFill=round?"#fff":border;
  return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 52 50" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+safe(label||kind)+'">'+shape+(kind==="brand"?"":'<text x="26" y="'+(round?29:diamond?29:27)+'" text-anchor="middle" font-size="'+(code.length>2?10:14)+'" font-weight="900" fill="'+textFill+'">'+safe(code)+'</text>')+'</svg>';
 }
-const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"StLF 20/25",radio:"2-41-1",crew:"0/1/5/6"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],gallery:[],activeGalleryId:null,dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,clockBase:0,clockRunning:false,clockAnchor:null,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
+const initial=()=>({step:0,title:"",stichwort:"F 2",meldebild:"",address:"",date:new Date().toISOString().slice(0,10),time:"12:00",weather:"",temp:"",windDir:"",windSpeed:"",windUnit:"bft",visibility:"",vehicles:[{id:uid(),type:"StLF 20/25",radio:"2-41-1",crew:"0/1/5/6"}],imageUrl:"",imageSource:"",imageCredit:"",imageLat:null,imageLon:null,scene:"",versions:[],gallery:[],activeGalleryId:null,dynamic:true,cues:[],objects:[],journal:[],radioMessages:[],clock:0,clockBase:0,clockRunning:false,clockAnchor:null,started:false,ended:false,endedAt:null,cueSignal:null,mapCenter:[8.626,50.513],mapZoom:15,mapStyle:"osm",releaseFront:true,releaseMap:true,releaseSight:false,releaseMapPage:false,viewerPage:"intro",history:[],wildfires:[],hydrantsVisible:false,hydrants:[]});
 let st=initial();try{const x=JSON.parse(localStorage.getItem("taktikplatte-wizard-v5")||"null");if(x){st={...initial(),...x};if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);st.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length);st.windUnit="bft"}}}catch{}
-let lastSeenCue=st.cueSignal?.id||null,flashTimer=null,participantChosenPhoto=null;let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
+let lastSeenCue=st.cueSignal?.id||null,flashTimer=null,participantChosenPhoto=null,participantCurrentPage="intro",lastDirectorPage="intro";let map=null,markers=[],hydrantMarkers=[],tool="",photos=[],photoIndex=0,activePanel="",startTime=0,timer=null,bc=null,geoloc=null;
 try{bc=new BroadcastChannel("taktikplatte-wizard-v5")}catch{}
 const bftLabel=v=>v===""||v==null?"–":String(v)+" Bft";
 function migrateScenarioWind(x){if(!x.windUnit&&x.windSpeed!==""&&x.windSpeed!=null){const kmh=Number(x.windSpeed);if(Number.isFinite(kmh)){x.windSpeed=String([1,6,12,20,29,39,50,62,75,89,103,118].filter(v=>kmh>=v).length)}}x.windUnit="bft";return x}
@@ -91,6 +91,7 @@ function renderSyncedClock(){
  const leader=$("#timeCounter"),participant=$("#participantTime"),status=$("#participantClockStatus");
  if(leader)leader.textContent=shown;
  if(participant)participant.textContent=shown;
+ const introClock=$("#participantIntroClock"),introStatus=$("#participantIntroClockStatus");if(introClock)introClock.textContent=shown;if(introStatus)introStatus.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
  if(status)status.textContent=st.ended?"Beendet":st.clockRunning?"Läuft":st.started?"Pausiert":"Nicht gestartet";
 }
 function cueHeading(type){
@@ -346,8 +347,105 @@ $("#uploadFrontImage").onchange=async e=>{
 $("#mapillaryToken").value=localStorage.getItem("taktikplatte-mapillary-token")||"";$("#mapillaryToken").onchange=e=>{localStorage.setItem("taktikplatte-mapillary-token",e.target.value.trim());toast("Mapillary-Zugang gespeichert")};
 $("#findAddress").onclick=async()=>{storeForm();const q=st.address.trim();if(!q)return toast("Bitte eine Einsatzadresse eingeben",true);$("#photoStatus").textContent="Suche Adresse …";try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const d=await r.json();if(!d.length)throw Error("Adresse nicht gefunden");const lat=+d[0].lat,lon=+d[0].lon;st.mapCenter=[lon,lat];st.mapZoom=17;await searchPhotos(lat,lon)}catch(e){$("#photoStatus").textContent="Ortssuche fehlgeschlagen: "+e.message}};
 $("#findPhoto").onclick=()=>{if(st.imageLat!=null)searchPhotos(st.imageLat,st.imageLon);else $("#findAddress").click()};
+
+/* Three-stage participant briefing, controlled by exercise supervisor. */
+const viewerStages=[["intro","Allgemeine Lage"],["sight","Lage auf Sicht"],["map","Lagekarte & Planspiel"]];
+function viewerStageOpen(page){
+ return page==="intro"||(page==="sight"&&st.releaseSight===true)||(page==="map"&&st.releaseMapPage===true);
+}
+function acceptedViewerPage(page){
+ return viewerStageOpen(page)?page:"intro";
+}
+function renderIntroBriefing(){
+ const el=$("#participantIntroFacts"),list=$("#participantIntroVehicles"),message=$("#participantIntroMessage");
+ if(!el||!list||!message)return;
+ const entries=[
+ ["Alarmstichwort",st.stichwort||"Nicht angegeben"],
+ ["Einsatzort",st.address||"Noch nicht angegeben"],
+ ["Alarmzeit",((st.date||"")+(st.time?" · "+st.time+" Uhr":"")).trim()||"Nicht angegeben"],
+ ["Wetter",st.weather||"Nicht angegeben"],
+ ["Temperatur",st.temp!==""&&st.temp!=null?String(st.temp)+" °C":"Nicht angegeben"],
+ ["Wind",((st.windDir?"aus "+st.windDir+" · ":"")+beaufortDescription(st.windSpeed))],
+ ["Sichtverhältnisse",st.visibility||"Nicht angegeben"],
+ ["Alarmierte Kräfte",(st.vehicles||[]).length+" Fahrzeug(e)"]
+ ];
+ el.innerHTML=entries.map(([key,val])=>'<article class="participant-intro-fact"><span>'+safe(key)+'</span><strong>'+safe(val)+'</strong></article>').join("");
+ message.textContent=st.meldebild||"Die Leitstelle hat noch kein Meldebild hinterlegt.";
+ list.innerHTML=(st.vehicles||[]).length?(st.vehicles||[]).map(v=>
+ '<div class="participant-intro-vehicle"><strong>'+safe(v.type||"Einsatzfahrzeug")+'</strong><span>Funkrufname: '+safe(v.radio||"–")+'</span><span>Stärke: '+safe(v.crew||"–")+'</span></div>'
+ ).join(""):'<p>Keine alarmierten Fahrzeuge hinterlegt.</p>';
+ const introClock=$("#participantIntroClock");
+ if(introClock)introClock.textContent=stamp();
+ const hint=$("#participantIntroNextHint");
+ if(hint)hint.textContent=st.releaseSight?"Seite 2 „Lage auf Sicht“ ist jetzt verfügbar.":"Die Lage auf Sicht wird von der Übungsleitung freigegeben.";
+}
+function renderViewerPages(){
+ const nav=$("#participantPagesNav");
+ if(!nav)return;
+ if(!viewerStageOpen(participantCurrentPage))participantCurrentPage="intro";
+ document.body.dataset.viewerPage=participantCurrentPage;
+ const idx=viewerStages.findIndex(([page])=>page===participantCurrentPage);
+ const stage=viewerStages[idx]||viewerStages[0];
+ const status=$("#participantPageStatus");
+ if(status)status.textContent=String(idx+1).padStart(2,"0")+" / 03 · "+stage[1];
+ $$("[data-viewer-page]").forEach(button=>{
+  const page=button.dataset.viewerPage,open=viewerStageOpen(page);
+  button.disabled=!open;button.classList.toggle("selected",page===participantCurrentPage);
+  const small=button.querySelector("small");
+  if(small)small.hidden=open;
+  button.setAttribute("aria-current",page===participantCurrentPage?"page":"false");
+ });
+ renderIntroBriefing();
+ if(isViewer&&participantCurrentPage==="map"&&map){
+  requestAnimationFrame(()=>{map?.resize();renderMarkers();ensureWildfireLayers()});
+ }
+}
+function setViewerPage(page,fromInstructor=false){
+ const chosen=acceptedViewerPage(page);
+ if(isViewer){
+  participantCurrentPage=chosen;
+  renderViewerPages();
+  if(fromInstructor)lastDirectorPage=st.viewerPage||"intro";
+ }else{
+  st.viewerPage=chosen;
+  renderDirectorViewerControls();
+  persist();
+ }
+}
+function renderDirectorViewerControls(){
+ if(isViewer)return;
+ const sight=$("#releasePageSight"),mapPage=$("#releasePageMap"),chooser=$("#directorViewerPage");
+ if(!sight||!mapPage||!chooser)return;
+ sight.checked=st.releaseSight===true;
+ mapPage.checked=st.releaseMapPage===true;
+ chooser.querySelectorAll("option").forEach(option=>{
+  option.disabled=!viewerStageOpen(option.value);
+ });
+ chooser.value=acceptedViewerPage(st.viewerPage||"intro");
+}
+$$("[data-viewer-page]").forEach(button=>button.onclick=()=>{
+ if(!isViewer)return;
+ setViewerPage(button.dataset.viewerPage);
+});
+$("#releasePageSight").onchange=e=>{
+ st.releaseSight=e.target.checked;
+ if(st.releaseSight){st.releaseFront=true;$("#showViewerFront").checked=true;st.viewerPage="sight"}
+ else if(st.viewerPage==="sight")st.viewerPage="intro";
+ renderDirectorViewerControls();persist();
+};
+$("#releasePageMap").onchange=e=>{
+ st.releaseMapPage=e.target.checked;
+ if(st.releaseMapPage){st.releaseMap=true;$("#showViewerMap").checked=true;st.viewerPage="map"}
+ else if(st.viewerPage==="map")st.viewerPage=st.releaseSight?"sight":"intro";
+ renderDirectorViewerControls();persist();
+};
+$("#directorViewerPage").onchange=e=>{
+ st.viewerPage=acceptedViewerPage(e.target.value);
+ renderDirectorViewerControls();persist();
+};
+
 function updateSummary(){
- renderWind();const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+beaufortDescription(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
+ renderWind();renderIntroBriefing();const rows=[["Alarmstichwort",st.stichwort||"–"],["Einsatzort",st.address||"Noch nicht angegeben"],["Wetter / Wind",(st.weather||"–")+" · "+(st.windDir||"–")+" · "+beaufortDescription(st.windSpeed)],["Ersteintreffende Fahrzeuge",st.vehicles.length+" Fahrzeug(e)"]];
  if(!isViewer)rows.push(["Lageentwicklung",st.dynamic?"Manuell steuerbar":"Klassisches Planspiel"]);
  $("#summary").innerHTML=rows.map(([key,val])=>'<div><span>'+safe(key)+'</span><b>'+safe(val)+'</b></div>').join("");
 }
@@ -885,8 +983,8 @@ $("#endExercise").onclick=()=>{
  toast("Einsatz beendet. Die Lage wurde abgeschlossen.");
 };
 $("#printBtn").onclick=()=>{if(!st.started)return toast("Die Übungsdokumentation beginnt erst mit „Start“.",true);const sec=document.createElement("section");sec.id="printContent";sec.innerHTML="<h1>TAKTIKPLATTE – Übungsprotokoll</h1><p>"+safe(st.stichwort)+" · "+safe(st.address)+"</p><p>"+safe(st.date)+" · "+safe(st.time)+" · "+safe(st.weather)+" · Wind "+safe(st.windDir)+" "+safe(bftLabel(st.windSpeed))+"</p><h2>Einsatzmittel</h2><p>"+st.vehicles.map(x=>safe(x.type)+" "+safe(x.radio)+" ("+safe(x.crew)+")").join("; ")+"</p><h2>Chronologie</h2><table>"+st.journal.filter(x=>x.type!=="Teilnehmerfreigabe").map(x=>"<tr><td>"+safe(x.time)+"</td><td>"+safe(x.type)+"</td><td>"+safe(x.detail)+"</td></tr>").join("")+"</table>";document.body.append(sec);window.print();setTimeout(()=>sec.remove(),1000)};
-function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();bc?.postMessage({kind:"request"})}
-if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){const next=e.data.state;if(st.activeGalleryId!==next.activeGalleryId)participantChosenPhoto=null;st={...initial(),...next,step:3};updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();if(map){renderMarkers();renderHydrants()}}else if(!isViewer&&e.data?.kind==="request")persist()};
+function viewerStart(){document.body.classList.remove("landing-mode");document.body.classList.add("viewer");participantCurrentPage="intro";lastDirectorPage=st.viewerPage||"intro";st.step=3;$$(".step-content").forEach((e,i)=>e.classList.toggle("active",i===3));$("#controls").hidden=true;$("#viewerBanner").hidden=false;$("#toolkit").hidden=true;$("#vehicleTools").hidden=true;$("#directorPanel").hidden=true;$("#mapActions").hidden=true;$("#openViewer").hidden=true;$("#printBtn").hidden=true;$("#saveBtn").hidden=true;$("#exportBtn").hidden=true;$("#newBtn").hidden=true;$("#importBtn").hidden=true;renderParticipantScene();updateSummary();stepText();setupMap();renderEnded();refreshReleaseViews();renderSyncedClock();renderViewerPages();bc?.postMessage({kind:"request"})}
+if(bc)bc.onmessage=e=>{if(isViewer&&e.data?.kind==="sync"){const next=e.data.state;if(st.activeGalleryId!==next.activeGalleryId)participantChosenPhoto=null;const directorChanged=next.viewerPage!==lastDirectorPage;st={...initial(),...next,step:3};if(directorChanged){participantCurrentPage=acceptedViewerPage(st.viewerPage||"intro");lastDirectorPage=st.viewerPage||"intro";}if(!viewerStageOpen(participantCurrentPage))participantCurrentPage="intro";updateSummary();renderParticipantScene();signalCueFlash();refreshReleaseViews();renderSyncedClock();renderViewerPages();if(map){renderMarkers();renderHydrants()}}else if(!isViewer&&e.data?.kind==="request")persist()};
 // A participant updates its clock from the last shared anchor even between broadcast packets.
 // BroadcastChannel synchronizes separate tabs within the same browser, not remote devices.
 if(isViewer)setInterval(renderSyncedClock,250);
@@ -899,7 +997,7 @@ $("#logCommand").onclick=()=>{if(!st.started||st.ended)return toast("Dokumentati
 $("#returnLive").onclick=()=>{restoreLiveMap();toast("Aktuelle Lage wiederhergestellt")};
 $("#exportProtocol").onclick=()=>$("#printBtn").click();
 $("#showViewerFront").checked=st.releaseFront!==false;
-$("#showViewerMap").checked=st.releaseMap!==false;
+$("#showViewerMap").checked=st.releaseMap!==false;renderDirectorViewerControls();
 $("#showViewerFront").onchange=e=>{st.releaseFront=e.target.checked;persist()};
 $("#showViewerMap").onchange=e=>{st.releaseMap=e.target.checked;persist()};
 
