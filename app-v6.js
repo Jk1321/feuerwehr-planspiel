@@ -235,7 +235,7 @@ function playCue(c){
  if(!st.started)return toast("Bitte zuerst den Übungsdurchlauf mit „Start“ beginnen.",true);
  c.state="played";st.activeCue=affectedCue(c.type,c.intensity,c);
  st.cueSignal={id:uid(),at:Date.now()};
- log("Einspielung",c.description);renderCues();updateSummary();renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Lageänderung freigegeben");
+ log("Einspielung",(c.type==="report"&&c.sender?c.sender+": ":"")+c.description);renderCues();updateSummary();renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Lageänderung freigegeben");
 }
 $("#applyNow").onclick=()=>{
  if(st.ended)return toast("Der Einsatz ist beendet.",true);
@@ -243,7 +243,7 @@ $("#applyNow").onclick=()=>{
  const text=$("#liveText").value.trim();if(!text)return;
  const type=$("#liveType").value,degree=(type==="fire"||type==="smoke")?Number($("#liveIntensity").value):undefined;
  st.activeCue=affectedCue(type,degree,{description:text,sender:type==="report"?$("#liveSender").value.trim():""});
- st.cueSignal={id:uid(),at:Date.now()};log("Spontane Lageänderung",text);
+ st.cueSignal={id:uid(),at:Date.now()};log("Spontane Lageänderung",(type==="report"&&st.activeCue.sender?st.activeCue.sender+": ":"")+text);
  $("#liveText").value="";$("#liveSender").value="";renderParticipantScene();signalCueFlash();renderMarkers();persist();toast("Spontane Lageänderung freigegeben");
 };
 
