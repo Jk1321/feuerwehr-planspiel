@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 8.2**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 8.3**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,14 @@ Aktueller Entwicklungsstand: **Version 8.2**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Immersive Teilnehmeransichten – Version 8.3
+
+- **Seite 1 vollständig als Alarmierungsbildschirm:** Beim Öffnen der Teilnehmeransicht ist ausschließlich die allgemeine Lage in einer bildschirmfüllenden Darstellung sichtbar. Sie umfasst Einsatzstichwort, Adresse, Datum/Uhrzeit, Meldebild, Wetter, Temperatur, Wind (Beaufort und Beschreibung), Sichtverhältnisse sowie die alarmierten Fahrzeuge mit Typ, Funkrufname und Stärke. Die synchronisierte Übungsuhr bleibt sichtbar.
+- **Seite 2 als eigenständige große Fotoansicht:** Nach Freigabe durch die Übungsleitung wechselt die Teilnehmeransicht auf einen dunklen Vollbild-Fotorahmen. Die gesamte Aufnahme wird ohne Zuschnitt dargestellt. Weitere freigegebene Perspektiven stehen optional als schmale Bildleiste darunter bereit. Karte, Einsatzübersicht und Einspieler sind auf dieser Seite ausgeblendet.
+- **Seite 3 unverändert:** Nach der nächsten Freigabe erscheint die bisherige Planspielansicht mit Karte, Fotos, Einspielungen und allen dort vorhandenen Funktionen. Die vorhandene Kartendarstellung wurde nicht umgebaut.
+- **Blickregie:** Die Übungsleitung gibt Seite 2 und 3 frei oder sperrt sie separat. Bei einer neuen Freigabe erfolgt der Seitenwechsel automatisch. Eine gesperrte Seite kann nicht betrachtet werden. Die bisherige Seitennavigation bleibt auf Seite 3 verfügbar, wird während der immersiven Alarmierungs- und Sichtansichten nicht eingeblendet.
+- **Technisch:** Vollbildlayout bedeutet bildschirmfüllender Browserbereich; ein browserseitiger Fullscreen-API-Aufruf ist nicht nötig. Synchronisierung weiterhin nur über BroadcastChannel innerhalb derselben Browserumgebung.
 
 ## Teilnehmeransicht in drei Freigabestufen – Version 8.2
 
