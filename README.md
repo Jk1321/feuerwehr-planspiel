@@ -1,6 +1,6 @@
 # TAKTIKPLATTE · Feuerwehr-Planspiel
 
-Aktueller Entwicklungsstand: **Version 7.8**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
+Aktueller Entwicklungsstand: **Version 8.0**. Die Anwendung ist eine Ausbildungs- und Übungssoftware, kein System zur realen Einsatzführung.
 
 ## Vorbereitung in vier Schritten
 
@@ -10,6 +10,14 @@ Aktueller Entwicklungsstand: **Version 7.8**. Die Anwendung ist eine Ausbildungs
 4. **Planspiel**: Einsatzkarte für eine übende Führungskraft, getrennte lokale Teilnehmeransicht, manuelle taktische Zeichen (Fahrzeuge, Führung, Bereitstellung, Wasserentnahme, Einsatzarten, Personen), spontane Einspielungen, Übungsprotokoll und Druck-/PDF-Funktion.
 
 
+
+## Änderungen in Version 8.0
+
+- **Funkspruch mit Absender:** Für vorbereitete Ereignisse (Schritt 3) und spontane Einspielungen gibt es bei der Kategorie Funkspruch ein zusätzliches Absenderfeld. Der Teilnehmer sieht den Absender getrennt vom Meldungstext. Auch die Dokumentation enthält ihn.
+- **Fahrzeugübernahme stabilisiert:** Fahrzeugtyp, Funkrufname und Stärke werden bereits bei der Eingabe gespeichert und vor dem Schrittwechsel erneut übernommen. Die Vorschlagsliste unterstützt etwa StLF 20/25, LF, HLF, DLK, RW, RTW und NEF, lässt aber andere Typen zu.
+- **Zusatzbilder vollständig sichtbar:** Der Bildrahmen passt Bilder unterschiedlicher Seitenverhältnisse vollständig ein, ohne Bildinhalte abzuschneiden. Lange Namen werden in der Galerie umbrochen.
+- **Windstärke in beiden Ansichten:** Die Beaufort-Zahl wird um dieselbe Beschreibung aus Schritt 1 ergänzt, beispielsweise 4 Bft · mäßige Brise.
+- **Rothermel-Info-Hilfen:** Die Felder Bewuchs, Brennstofffeuchte, Wind in Flammenhöhe und Hangneigung haben Hover- und Tastaturhinweise zu Bedeutung, Eingabebereich und Modellgrenzen. Die Ein-Klassen-Simulation ist nicht validiert und keine Einsatzprognose.
 
 ## Änderungen in Version 7.8
 
