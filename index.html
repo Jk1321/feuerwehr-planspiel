@@ -260,9 +260,15 @@ body.viewer[data-viewer-page="sight"] .participant-sight-stage{display:flex!impo
 .sight-stage-gallery-choices button span{min-width:0;overflow-wrap:anywhere;max-height:38px;overflow:hidden}
 @media(max-width:1000px){body.viewer[data-viewer-page="intro"] .participant-intro-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){body.viewer[data-viewer-page="intro"] .participant-intro-cards{grid-template-columns:1fr}body.viewer[data-viewer-page="intro"] .participant-intro-vehicle{grid-template-columns:1fr 1fr}body.viewer[data-viewer-page="intro"] .participant-intro-vehicle span:last-child{grid-column:1/-1}.sight-stage-header{align-items:flex-start;flex-direction:column}.sight-stage-gallery-choices button{max-width:160px}}
+
+.sight-stage-title{display:flex;flex-direction:column;gap:5px}
+.sight-stage-clock{display:flex;align-items:center;gap:12px;padding:9px 15px;background:#1b3446;border:1px solid #42647a;border-radius:10px;white-space:nowrap}
+.sight-stage-clock span,.sight-stage-clock small{font-size:11px;color:#b5cbd8}
+.sight-stage-clock strong{font-variant-numeric:tabular-nums;font-size:clamp(18px,2vw,27px);letter-spacing:.03em;color:#fff}
+@media(max-width:550px){.sight-stage-clock{width:100%;justify-content:space-between;gap:6px;padding:7px 10px}.sight-stage-clock strong{font-size:20px}}
 </style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
-<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.3</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
+<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.4</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
 <div class="stepper" aria-label="Szenariovorbereitung">
 <button class="step current" data-step="0"><span class="step-num">01</span><span>Alarmierung</span></button>
@@ -314,7 +320,7 @@ body.viewer[data-viewer-page="sight"] .participant-sight-stage{display:flex!impo
  </div>
 </section>
 <section class="participant-sight-stage" id="participantSightStage" hidden aria-label="Lage auf Sicht">
- <div class="sight-stage-header"><span>02 / 03 · ERKUNDUNG</span><h2>Lage auf Sicht</h2></div>
+ <div class="sight-stage-header"><div class="sight-stage-title"><span>02 / 03 · ERKUNDUNG</span><h2>Lage auf Sicht</h2></div><div class="sight-stage-clock" aria-label="Synchronisierte Übungszeit"><span>Übungszeit</span><strong id="participantSightClock">00:00:00</strong><small id="participantSightClockStatus">Nicht gestartet</small></div></div>
  <div class="sight-stage-photo" id="participantSightPhotoFrame"><img id="participantSightPhoto" alt="Erste Lage auf Sicht" hidden><div id="participantSightEmpty" class="sight-stage-empty">Noch kein Einsatzbild freigegeben.</div></div>
  <div class="sight-stage-footer"><strong id="participantSightCaption">Frontalansicht der Einsatzstelle</strong><span id="participantSightPhotoCount"></span></div>
  <div class="sight-stage-gallery" id="participantSightGallery" hidden><div id="participantSightGalleryChoices" class="sight-stage-gallery-choices"></div></div>
@@ -420,4 +426,4 @@ body.viewer[data-viewer-page="sight"] .participant-sight-stage{display:flex!impo
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v6.js?v=8.3" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v6.js?v=8.4" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
