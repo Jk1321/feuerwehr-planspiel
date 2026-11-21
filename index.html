@@ -166,9 +166,64 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 .parameter-info:focus-visible{outline:2px solid #207aaf;outline-offset:2px}
 .wildfire-physics{overflow:visible}
 @media(max-width:660px){.participant-photo{aspect-ratio:4/3;max-height:360px}.parameter-info:is(:hover,:focus-visible)::after{left:auto;right:-15px;width:min(290px,76vw)}}
+
+/* v8.2 – three-stage instructor-released participant learning flow */
+.participant-pages-nav,.participant-intro{display:none}
+.viewer .participant-pages-nav{display:block;margin-bottom:18px}
+.participant-pages-nav{padding:17px 18px;background:linear-gradient(120deg,#10293e,#1e435d);color:#f6fbff;border-radius:15px;box-shadow:0 9px 25px #082b4220}
+.participant-pages-title{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:14px}
+.participant-pages-kicker{font-size:10px;letter-spacing:.12em;color:#b8d8e9;font-weight:750}
+.participant-pages-title strong{font-size:12px}
+.participant-pages-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.participant-pages-buttons button{background:#ffffff0d;border:1px solid #ffffff44;color:#e8f4fa;border-radius:10px;font-size:12px;font-weight:750;padding:11px 8px;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+.participant-pages-buttons button span{font-size:10px;background:#fff2;padding:4px 7px;border-radius:6px}
+.participant-pages-buttons button.selected{background:#e9f6fd;color:#12334c;border-color:#e9f6fd}
+.participant-pages-buttons button.selected span{background:#165276;color:white}
+.participant-pages-buttons button:disabled{background:#172d3b88;color:#a0aebb;border-style:dashed;cursor:not-allowed;opacity:.75}
+.participant-pages-buttons small{font-size:10px;font-weight:500}
+.viewer .participant-intro{display:block;background:#fff;border:1px solid #dde7ed;border-radius:15px;overflow:hidden}
+.participant-intro-hero{padding:31px 33px;background:linear-gradient(110deg,#11314b,#245877);color:#f5fbff}
+.participant-intro-hero h2{font-size:clamp(24px,3vw,34px);margin:8px 0}
+.participant-intro-hero p{max-width:640px;color:#cfe3ed;line-height:1.6;margin:5px 0}
+.participant-intro-eyebrow,.participant-intro-label{font-size:11px;letter-spacing:.06em;font-weight:850;text-transform:uppercase}
+.participant-intro-eyebrow{color:#b4d8e8}
+.participant-intro-content{padding:24px 30px;display:grid;gap:18px}
+.participant-intro-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.participant-intro-fact{min-width:0;border:1px solid #dce7ed;border-radius:11px;padding:15px;background:#f8fbfd}
+.participant-intro-fact span{display:block;color:#637c8d;font-size:11px;margin-bottom:8px}
+.participant-intro-fact strong{font-size:15px;line-height:1.45;overflow-wrap:anywhere;color:#173951}
+.participant-intro-panel{border:1px solid #dce7ed;border-radius:12px;padding:18px;background:#fff}
+.participant-intro-label{color:#57768c;margin-bottom:11px}
+.participant-intro-panel p{line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-size:14px}
+.participant-intro-vehicles{display:grid;gap:8px}
+.participant-intro-vehicle{display:grid;grid-template-columns:minmax(110px,1fr) minmax(100px,1fr) auto;gap:10px;align-items:center;background:#f3f8fb;padding:10px 12px;border-radius:9px;font-size:12px}
+.participant-intro-vehicle strong{font-size:13px}
+.participant-intro-vehicle span{color:#536c7b}
+.participant-intro-clock{display:flex;gap:14px;align-items:center;padding:13px 18px;border-radius:10px;background:#eaf2f7;font-size:12px}
+.participant-intro-clock strong{font-variant-numeric:tabular-nums;font-size:21px;color:#194968}
+.participant-intro-clock span:last-child{margin-left:auto;color:#637e8e}
+.participant-intro-hint{margin:0;color:#688496;font-size:12px}
+.viewer-release-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #dfebef}
+.viewer-release-row strong,.viewer-release-row small{display:block}
+.viewer-release-row strong{font-size:12px}.viewer-release-row small{font-size:10px;margin-top:5px;color:#708697}
+.viewer-release-row .checkline{white-space:nowrap;font-size:11px;margin:0}
+.viewer-release-ready{font-size:10px;color:#257650}
+.viewer-release-current{display:grid;gap:7px;margin-top:14px}
+.viewer-release-current label{font-weight:750;font-size:12px}
+body.viewer[data-viewer-page="intro"] .play-grid{display:none!important}
+body.viewer[data-viewer-page="sight"] .play-grid{grid-template-columns:minmax(0,1fr);max-width:1050px;margin:0 auto}
+body.viewer[data-viewer-page="sight"] .play-grid>div:first-child{display:none!important}
+body.viewer[data-viewer-page="sight"] .participant-panel>.paper:not(:first-child){display:none!important}
+body.viewer[data-viewer-page="sight"] .participant-panel .readout,body.viewer[data-viewer-page="sight"] .participant-panel .participant-timebar{display:none!important}
+body.viewer[data-viewer-page="sight"] .participant-panel>.paper:first-child{padding:clamp(14px,3vw,24px)}
+body.viewer[data-viewer-page="sight"] .participant-photo{max-height:65vh}
+body.viewer[data-viewer-page="map"] .participant-intro,body.viewer[data-viewer-page="sight"] .participant-intro{display:none!important}
+body.viewer[data-viewer-page="intro"] .participant-intro{display:block!important}
+@media(max-width:800px){.participant-intro-cards{grid-template-columns:repeat(2,1fr)}.participant-pages-buttons button{font-size:11px}}
+@media(max-width:550px){.participant-pages-buttons{gap:5px}.participant-pages-buttons button{padding:9px 3px;font-size:10px}.participant-pages-buttons button span{font-size:9px}.participant-pages-title{align-items:flex-start;flex-direction:column}.participant-intro-content{padding:16px}.participant-intro-cards{grid-template-columns:1fr}.participant-intro-hero{padding:24px 18px}.participant-intro-vehicle{grid-template-columns:1fr 1fr}.participant-intro-vehicle span:last-child{grid-column:1/-1}}
 </style></head><body class="landing-mode">
 <section id="landing" class="landing"><div class="landing-bg"></div><div class="landing-content"><div class="landing-logo"><div class="landing-mark"><svg viewBox="0 0 80 80" width="74" height="74" aria-hidden="true"><path d="M40 4 70 18v43L40 76 10 61V18Z" fill="#142b43" stroke="#77b8df" stroke-width="2"/><path d="M22 24h36v8H44v29h-9V32H22Z" fill="#fff"/><path d="M49 44h10v8H49Z" fill="#51b5f0"/></svg></div><div class="landing-logo-title">TAKTIK<span>PLATTE</span></div><div class="landing-subtitle">Digitales Feuerwehr-Planspiel</div></div><p class="landing-intro">Von der Alarmierung bis zum Einsatzende – realistische Einsatzlagen vorbereiten, darstellen und manuell weiterentwickeln.</p><div class="landing-choices"><button class="landing-choice" id="landingNew"><span class="landing-choice-icon">＋</span><span class="landing-choice-copy"><strong>Neuen Einsatz erstellen</strong><small>Schritt für Schritt ein Planspiel vorbereiten</small></span><span class="landing-arrow">→</span></button><button class="landing-choice" id="landingImport"><span class="landing-choice-icon import-icon">↥</span><span class="landing-choice-copy"><strong>Vorhandenen Einsatz laden</strong><small>Gespeicherte JSON-Szenariodatei auswählen</small></span><span class="landing-arrow">→</span></button></div><input type="file" id="landingFile" accept=".json,application/json" hidden><p class="landing-foot">Für Ausbildung und Übung · keine operative Einsatzführung</p></div></section>
-<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.1</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
+<header class="topbar"><button id="homeBtn" class="homeBtn" title="Zur Startseite" aria-label="Zur Startseite"><span class="home-icon">⌂</span></button><div class="brand"><div class="brandmark">T</div><span>TAKTIK<em>PLATTE</em></span></div><span class="statusdot">Feuerwehr-Planspiel · Version 8.2</span><div class="top-actions" id="controls"><button id="newBtn">Neu</button><button id="importBtn">Importieren</button><button id="exportBtn">Exportieren</button><button id="saveBtn" class="primary">Speichern</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></header>
 <main class="workspace">
 <div class="stepper" aria-label="Szenariovorbereitung">
 <button class="step current" data-step="0"><span class="step-num">01</span><span>Alarmierung</span></button>
@@ -200,7 +255,26 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div class="steps-actions"><button data-back>← Zurück</button><button class="primary right" data-next>Weiter: Lageentwicklung →</button></div></div><aside class="aside-card"><h3>Frontalansicht als Ausgangslage</h3><p>Das Bild ist zunächst eine Originalaufnahme eines Straßenbilddienstes. Für ein Planspiel wird es später als eigenständiges, realistisch bearbeitetes Szenenbild aufbereitet.</p><ul><li>Originalbild auswählen</li><li>Gewünschte Lage beschreiben</li><li>Mehrere vorbereitete Zustände speichern</li><li>Später KI-Bildbearbeitung integrieren</li></ul><p class="helper">Die Aufnahme muss nicht exakt auf das Objekt ausgerichtet sein. Bildabdeckung und Blickrichtung unterscheiden sich je nach Anbieter.</p></aside></div></section>
 <section class="step-content" data-page="2"><div class="main-grid"><div><div class="paper"><div class="block-title"><h2>03 · Dynamische Lageentwicklung</h2><span class="badge">Optional</span></div><label class="checkline"><input type="checkbox" id="dynamicEnabled" checked> Dieses Planspiel dynamisch entwickeln</label><p>Wenn aktiviert, kannst du Lageänderungen vorbereiten oder während des Planspiels spontan freigeben. Der Teilnehmer muss anschließend erneut erkunden, beurteilen und befehlen.</p><div id="dynamicBlock"><div class="sectionline"></div><h3>Vorgeplante Ereignisse</h3><div class="fields three"><div class="field"><label for="cueMinute">Ab Übungsminute</label><input type="number" id="cueMinute" min="0" value="5"></div><div class="field"><label for="cueType">Kategorie</label><select id="cueType"><option value="fire">Brandentwicklung</option><option value="smoke">Rauchentwicklung</option><option value="person">Personenlage</option><option value="vehicle">Fahrzeuge / Kräfte</option><option value="report">Funkspruch</option><option value="other">Sonstige Entwicklung</option></select></div><div class="field"><label for="cueText">Bezeichnung / Rückmeldung</label><input id="cueText" required placeholder="z. B. Rauch dringt in Treppenraum"></div></div><div class="field" id="cueSenderField" hidden><label for="cueSender">Absender des Funkspruchs / Funkrufname</label><input id="cueSender" placeholder="z. B. Florian 2-42-1 oder Angriffstrupp" maxlength="100"></div><div class="field" id="cueIntensityField" hidden><label for="cueIntensity" id="cueIntensityLabel">Ausmaß der Brand- / Rauchentwicklung</label><select id="cueIntensity"><option value="0">Keine</option><option value="1">Gering</option><option value="2">Mittel</option><option value="3">Stark / ausgedehnt</option></select></div><button id="addCue">+ Ereignis vormerken</button><div class="sectionline"></div><div id="cues"></div></div></div>
 <div class="steps-actions"><button data-back>← Zurück</button><button id="skipDynamic">Diesen Schritt überspringen</button><button class="primary right" data-next>Weiter: Planspiel →</button></div></div><aside class="aside-card"><h3>Automatisch nach Übungszeit</h3><p>Vorbereitete Ereignisse werden zur eingestellten Übungsminute automatisch freigegeben. Du bestimmst als Planspielleiter, wann eine neue Lage freigegeben wird.</p><ul><li>Brand- und Rauchentwicklung</li><li>Neue Personenlage</li><li>Nachrückende Einheiten</li><li>Spontane Funkmeldungen</li><li>Weitere Führungskreisläufe</li></ul><p class="helper">Für ein klassisches Planspiel kannst du den Schritt einfach überspringen.</p></aside></div></section>
-<section class="step-content" data-page="3"><div id="viewerBanner" class="view-banner" hidden>Teilnehmeransicht · nur freigegebene Lageinformationen</div><div class="play-grid"><div><div class="map-card"><div class="map-head"><h2>04 · Lagekarte</h2><div class="map-controls"><button id="hydrantToggle" title="Öffentlich kartierte Hydranten aus OpenStreetMap suchen" class="small">Hydranten</button><select id="mapStyle" aria-label="Kartentyp"><option value="osm">OpenStreetMap</option><option value="satellite">Satellit</option><option value="streets">MapTiler Straßenkarte</option></select><input id="mapKey" type="password" placeholder="MapTiler Key" aria-label="MapTiler-Schlüssel"></div></div><div class="map-wrap"><div id="map" class="map"></div><div id="weatherMapBadge" class="weather-map-badge" aria-label="Windbedingungen"><span id="windArrow">↑</span><div><strong id="windMapDirection">Windrichtung –</strong><small id="windMapSpeed">Windstärke –</small></div></div><div id="wildfireLegend" class="wildfire-legend" hidden><span><i class="wf-legend-smoke"></i> Rauch</span><span><i class="wf-legend-flame"></i> Feuerfront</span><span><i class="wf-legend-burn"></i> Verbrannte Fläche</span><small>Schematische Darstellung</small></div></div><div id="mapAnnouncement" class="map-announcement" hidden></div></div><div class="steps-actions" id="mapActions"><button data-back>← Vorbereitung</button><button id="clearMap" class="danger">Karte leeren</button><button id="openViewer" class="primary right">Teilnehmeransicht öffnen</button></div><div class="paper tactical-editor" id="tacticalEditor" style="margin-top:15px"><div class="block-title"><h2>Taktische Zeichen</h2><span class="badge">Nur Übungsleitung</span></div>
+<section class="step-content" data-page="3">
+<div class="participant-pages-nav" id="participantPagesNav" hidden>
+ <div class="participant-pages-title"><span class="participant-pages-kicker">TAKTIKPLATTE · ÜBUNGSDURCHLAUF</span><strong id="participantPageStatus">01 / 03 · Allgemeine Lage</strong></div>
+ <div class="participant-pages-buttons">
+  <button type="button" data-viewer-page="intro" class="selected"><span>01</span> Allgemeine Lage</button>
+  <button type="button" data-viewer-page="sight" disabled><span>02</span> Lage auf Sicht <small>Gesperrt</small></button>
+  <button type="button" data-viewer-page="map" disabled><span>03</span> Lagekarte <small>Gesperrt</small></button>
+ </div>
+</div>
+<section class="participant-intro" id="participantIntro" hidden>
+ <div class="participant-intro-hero"><div class="participant-intro-eyebrow">01 · Alarmierung &amp; Ausgangssituation</div><h2>Allgemeine Lage</h2><p>Diese Informationen stehen dir zum Zeitpunkt der Alarmierung zur Verfügung. Weitere Ansichten werden durch die Übungsleitung freigegeben.</p></div>
+ <div class="participant-intro-content">
+  <div class="participant-intro-cards" id="participantIntroFacts"></div>
+  <div class="participant-intro-panel"><div class="participant-intro-label">Alarmmeldung der Leitstelle</div><p id="participantIntroMessage">Noch keine Meldung hinterlegt.</p></div>
+  <div class="participant-intro-panel"><div class="participant-intro-label">Alarmierte Einsatzmittel und Kräfte</div><div id="participantIntroVehicles" class="participant-intro-vehicles"></div></div>
+  <div class="participant-intro-clock"><span>Übungszeit</span><strong id="participantIntroClock">00:00:00</strong><span id="participantIntroClockStatus">Nicht gestartet</span></div>
+  <p class="participant-intro-hint" id="participantIntroNextHint">Die Lage auf Sicht wird von der Übungsleitung freigegeben.</p>
+ </div>
+</section>
+<div id="viewerBanner" class="view-banner" hidden>Teilnehmeransicht · nur freigegebene Lageinformationen</div><div class="play-grid"><div><div class="map-card"><div class="map-head"><h2>04 · Lagekarte</h2><div class="map-controls"><button id="hydrantToggle" title="Öffentlich kartierte Hydranten aus OpenStreetMap suchen" class="small">Hydranten</button><select id="mapStyle" aria-label="Kartentyp"><option value="osm">OpenStreetMap</option><option value="satellite">Satellit</option><option value="streets">MapTiler Straßenkarte</option></select><input id="mapKey" type="password" placeholder="MapTiler Key" aria-label="MapTiler-Schlüssel"></div></div><div class="map-wrap"><div id="map" class="map"></div><div id="weatherMapBadge" class="weather-map-badge" aria-label="Windbedingungen"><span id="windArrow">↑</span><div><strong id="windMapDirection">Windrichtung –</strong><small id="windMapSpeed">Windstärke –</small></div></div><div id="wildfireLegend" class="wildfire-legend" hidden><span><i class="wf-legend-smoke"></i> Rauch</span><span><i class="wf-legend-flame"></i> Feuerfront</span><span><i class="wf-legend-burn"></i> Verbrannte Fläche</span><small>Schematische Darstellung</small></div></div><div id="mapAnnouncement" class="map-announcement" hidden></div></div><div class="steps-actions" id="mapActions"><button data-back>← Vorbereitung</button><button id="clearMap" class="danger">Karte leeren</button><button id="openViewer" class="primary right">Teilnehmeransicht öffnen</button></div><div class="paper tactical-editor" id="tacticalEditor" style="margin-top:15px"><div class="block-title"><h2>Taktische Zeichen</h2><span class="badge">Nur Übungsleitung</span></div>
 <p>Wähle Organisation und Zeichen. Fahrzeuge kannst du jederzeit im Übungsverlauf hinzufügen, auch wenn sie nicht vorab alarmiert wurden.</p>
 <div class="tactical-select-grid"><div class="field"><label for="tacticOrganisation">Organisation</label><select id="tacticOrganisation"><option value="fw">Feuerwehr</option><option value="rd">Rettungsdienst</option><option value="thw">THW</option><option value="pol">Polizei</option></select></div>
 <div class="field"><label for="tacticCategory">Kategorie</label><select id="tacticCategory"></select></div>
@@ -289,10 +363,16 @@ body.exercise-finished #applyNow,body.exercise-finished #startClock,body.exercis
 <div id="galleryDirectorList" class="gallery-director-list"></div>
 </div>
 <div class="sectionline"></div>
-<div class="release-controls"><h3>Teilnehmerfreigaben</h3><label class="checkline"><input type="checkbox" id="showViewerFront" checked> Frontalansicht freigeben</label><label class="checkline"><input type="checkbox" id="showViewerMap" checked> Lagekarte freigeben</label></div>
+<div class="release-controls"><h3>Teilnehmerseiten freigeben</h3>
+<p class="helper">Die allgemeine Lage (Seite 1) ist von Beginn an sichtbar. Die weiteren Seiten kannst du einzeln freigeben und beim Teilnehmer direkt anzeigen lassen.</p>
+<div class="viewer-release-row"><div><strong>01 · Allgemeine Lage</strong><small>Alarmstichwort, Meldebild, Kräfte, Wetter, Wind und Alarmzeit</small></div><span class="viewer-release-ready">Immer sichtbar</span></div>
+<div class="viewer-release-row"><div><strong>02 · Lage auf Sicht</strong><small>Erste Sicht und freigegebene weitere Einsatzbilder</small></div><label class="checkline"><input id="releasePageSight" type="checkbox"> Freigeben</label></div>
+<div class="viewer-release-row"><div><strong>03 · Lagekarte / Planspiel</strong><small>Aktuelle Lagekarte, Einspielungen, Uhr und Bilder</small></div><label class="checkline"><input id="releasePageMap" type="checkbox"> Freigeben</label></div>
+<div class="viewer-release-current"><label for="directorViewerPage">Aktuelle Teilnehmerseite</label><select id="directorViewerPage"><option value="intro">01 · Allgemeine Lage</option><option value="sight">02 · Lage auf Sicht</option><option value="map">03 · Lagekarte und Planspiel</option></select></div>
+<div class="sectionline"></div><h3>Einzelne Inhalte</h3><label class="checkline"><input type="checkbox" id="showViewerFront" checked> Frontalansicht freigeben</label><label class="checkline"><input type="checkbox" id="showViewerMap" checked> Lagekarte freigeben</label></div>
 <p class="helper">Die Teilnehmeransicht zeigt nur freigegebene Informationen. Die Synchronisierung funktioniert in geöffneten Tabs desselben Browsers.</p>
 </div>
 <div class="play-actions"><button id="printBtn">Übungsprotokoll als PDF</button></div></aside></div></section>
 </main><div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-<script src="./app-v6.js?v=8.1" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
+<script src="./app-v6.js?v=8.2" defer></script><script src="./google-address-v5.js?v=5.3" defer></script></body></html>
